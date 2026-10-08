@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "POS has automatic date and cash input",
+    "Live change: 500 minus 250 equals 250",
+    "Quantity updates change to zero",
+    "Insufficient cash is clearly flagged and invalid",
+    "GCash hides disables cash and change",
+    "Cash toggling restores change and required input",
+    "Mobile POS fits viewport",
+    "Server stores tender and change accurately"
+  ],
+  "issues": []
+}

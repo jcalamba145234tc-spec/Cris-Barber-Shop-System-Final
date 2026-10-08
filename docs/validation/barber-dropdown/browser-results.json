@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "One compact status dropdown per barber, no visible Save button",
+    "Choice unavailable saves automatically",
+    "Choice inactive saves automatically",
+    "Choice on_leave saves automatically",
+    "Choice available saves automatically",
+    "Responsive table does not overflow the whole page"
+  ],
+  "issues": []
+}

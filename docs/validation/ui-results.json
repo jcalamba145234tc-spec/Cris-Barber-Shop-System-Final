@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "Admin dashboard renders",
+    "Cash reference hidden and disabled",
+    "GCash reference visible enabled required",
+    "POS total updates",
+    "Cash queue persisted",
+    "Mobile barber menu has no admin POS",
+    "Mobile dashboard fits viewport",
+    "Barber can advance own service but cannot complete financial checkout",
+    "Barber admin route returns 403",
+    "Admin completes barber-ready service",
+    "GCash immediate request remains queued pending verification",
+    "GCash verification plus explicit completion succeeds",
+    "Browser inventory reflects consumption",
+    "Browser restock adds instead of replacing stock",
+    "Destructive deletion can be cancelled",
+    "Confirmed deletion succeeds",
+    "Browser barber clock-in/out persists",
+    "Browser barber earnings reflect own verified completions",
+    "Existing dark theme preserved"
+  ],
+  "issues": []
+}
