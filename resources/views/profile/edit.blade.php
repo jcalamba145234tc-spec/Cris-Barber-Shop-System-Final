@@ -47,7 +47,8 @@
             @error('name') <p class="error">{{ $message }}</p> @enderror
 
             <label for="email">Email address</label>
-            <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required>
+            <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}" placeholder="name@crisbarber.com" aria-describedby="email-domain-help" required>
+            <p id="email-domain-help" class="muted">New email addresses must use @crisbarber.com. You may keep your existing email unchanged.</p>
             @error('email') <p class="error">{{ $message }}</p> @enderror
 
             <h2 class="profile-section-title">Change password</h2>

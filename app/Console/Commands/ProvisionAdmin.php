@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Rules\ShopEmailDomain;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -23,7 +24,7 @@ class ProvisionAdmin extends Command
         ];
         $validator = Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', new ShopEmailDomain, 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(12)],
         ]);
         if ($validator->fails()) {

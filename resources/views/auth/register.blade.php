@@ -16,7 +16,8 @@
             @error('name') <p class="error">{{ $message }}</p> @enderror
 
             <label for="email">Email address</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required>
+            <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="name@crisbarber.com" pattern="[^@\s]+@[cC][rR][iI][sS][bB][aA][rR][bB][eE][rR]\.[cC][oO][mM]" title="Use an email ending in @crisbarber.com" aria-describedby="email-domain-help" required>
+            <p id="email-domain-help" class="muted">Required domain: @crisbarber.com. Example: jake@crisbarber.com.</p>
             @error('email') <p class="error">{{ $message }}</p> @enderror
 
             <label for="role">Account type</label>

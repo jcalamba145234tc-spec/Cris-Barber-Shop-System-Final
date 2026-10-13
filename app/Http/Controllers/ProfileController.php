@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\ShopEmailDomain;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,7 +19,7 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($request->user()->id)],
+            'email' => ['required', 'email', 'max:255', new ShopEmailDomain($request->user()->email), Rule::unique('users')->ignore($request->user()->id)],
             'name' => ['required', 'string', 'max:255'],
             // Both authorized roles change their own password without re-entering the old one.
             'current_password' => ['exclude'],

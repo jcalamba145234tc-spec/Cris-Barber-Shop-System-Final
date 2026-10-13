@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Barber;
 use App\Models\User;
+use App\Rules\ShopEmailDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class AuthController extends Controller
         abort_unless($request->user()?->role === 'admin', 403);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', new ShopEmailDomain, 'unique:users,email'],
             'role' => ['required', 'in:barber'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);

@@ -68,10 +68,10 @@ class ShopManagementTest extends TestCase
 
     public function test_owner_cli_provisions_admin_without_public_registration(): void
     {
-        $this->artisan('shop:admin', ['email' => 'owner@example.test', '--name' => 'Owner'])
+        $this->artisan('shop:admin', ['email' => 'owner@crisbarber.com', '--name' => 'Owner'])
             ->expectsQuestion('Password (minimum 12 characters)', 'Owner-secret-123')
             ->expectsQuestion('Confirm password', 'Owner-secret-123')->assertSuccessful();
-        $owner = User::where('email', 'owner@example.test')->firstOrFail();
+        $owner = User::where('email', 'owner@crisbarber.com')->firstOrFail();
         $this->assertSame('admin', $owner->role);
         $this->assertTrue(Hash::check('Owner-secret-123', $owner->password));
     }
@@ -98,9 +98,9 @@ class ShopManagementTest extends TestCase
     {
         foreach ([$this->admin, $this->barberUser] as $index => $user) {
             $user->update(['password' => 'Old-password-123']);
-            $this->actingAs($user)->put('/profile', ['name' => 'Updated', 'email' => 'updated'.$index.'@example.test', 'password' => 'New-password-123', 'password_confirmation' => 'New-password-123'])->assertRedirect('/profile');
+            $this->actingAs($user)->put('/profile', ['name' => 'Updated', 'email' => 'updated'.$index.'@crisbarber.com', 'password' => 'New-password-123', 'password_confirmation' => 'New-password-123'])->assertRedirect('/profile');
             $this->assertTrue(Hash::check('New-password-123', $user->fresh()->password));
-            $this->assertSame('updated'.$index.'@example.test', $user->fresh()->email);
+            $this->assertSame('updated'.$index.'@crisbarber.com', $user->fresh()->email);
         }
     }
 
@@ -143,7 +143,7 @@ class ShopManagementTest extends TestCase
 
     public function test_admin_can_create_barber_but_not_web_admin(): void
     {
-        $data = ['name' => 'New Barber', 'email' => 'new@example.test', 'role' => 'barber', 'password' => 'Valid-password-123', 'password_confirmation' => 'Valid-password-123'];
+        $data = ['name' => 'New Barber', 'email' => 'new@crisbarber.com', 'role' => 'barber', 'password' => 'Valid-password-123', 'password_confirmation' => 'Valid-password-123'];
         $this->actingAs($this->admin)->post('/accounts', $data)->assertRedirect('/barbers');
         $new = User::where('email', $data['email'])->firstOrFail();
         $this->assertDatabaseHas('barbers', ['user_id' => $new->id]);
