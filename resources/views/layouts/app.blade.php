@@ -10,6 +10,15 @@
             document.documentElement.classList.add('dark');
         }
     </script>
+    <script>
+        // Some browsers restore whole pages even when no-store is set.
+        // Reload those snapshots so the server rechecks login/logout state.
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>

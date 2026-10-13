@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\PreventStaleAuthPages;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,6 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['role' => EnsureRole::class]);
+        $middleware->web(append: [PreventStaleAuthPages::class]);
+        $middleware->redirectUsersTo(function (Request $request): string {
+            $path = $request->session()->get('auth.last_page');
+
+            return is_string($path) && str_starts_with($path, '/')
+                && ! str_starts_with($path, '//') && ! str_contains($path, '\\')
+                ? $path : route('dashboard');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
