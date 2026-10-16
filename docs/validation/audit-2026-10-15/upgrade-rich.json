@@ -1,0 +1,47 @@
+{
+    "users": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "barbers": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "customers": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "products": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "services": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "service_products": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "transactions": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "transaction_products": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "payments": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "inventory_movements": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "attendance": {
+        "records": 1,
+        "all_existing_values_preserved": true
+    },
+    "foreign_key_violations": 0
+}

@@ -7,10 +7,10 @@
 <dl class="details-grid"><dt>Customer's money / Cash received</dt><dd data-saved-cash>{{ $transaction->payment->cash_received !== null ? '₱'.number_format($transaction->payment->cash_received, 2) : 'Not recorded (existing payment)' }}</dd><dt>Customer's change</dt><dd data-saved-change>{{ $transaction->payment->change_amount !== null ? '₱'.number_format($transaction->payment->change_amount, 2) : 'Not recorded (existing payment)' }}</dd></dl>
 @endif
 <p>GCash reference: {{ $transaction->payment?->gcash_reference_no ?? 'Not applicable' }}</p>
-@if($transaction->payment?->payment_method === 'gcash' && $transaction->status !== 'cancelled')
+@if($transaction->payment?->payment_method === 'gcash' && !in_array($transaction->status,['completed','cancelled']))
 <form class="actions" method="POST" action="{{ route('payments.verify',$transaction->payment) }}">@csrf<button name="status" value="verified">Verify GCash</button><button name="status" value="flagged" class="secondary-button">Flag payment</button></form>
 @endif
-<div class="actions"><a href="{{ route('transactions.edit',$transaction) }}">Edit customer / date</a><form method="POST" action="{{ route('transactions.destroy',$transaction) }}" data-confirm="Remove this history record? Inventory consumed remains consumed; audit records are retained.">@csrf @method('DELETE')<button>Remove record</button></form></div>
+<div class="actions"><a href="{{ route('transactions.edit',$transaction) }}">Edit customer / date</a>@if($transaction->status !== 'completed')<form method="POST" action="{{ route('transactions.destroy',$transaction) }}" data-confirm="Remove this history record? Inventory consumed remains consumed; audit records are retained.">@csrf @method('DELETE')<button>Remove record</button></form>@endif</div>
 @endif
 @if(!in_array($transaction->status,['completed','cancelled']))
 <form class="actions" method="POST" action="{{ route('transactions.status',$transaction) }}">@csrf @method('PATCH')
@@ -20,6 +20,6 @@
 </form>
 @endif
 <h2>Inventory requirements snapshot</h2><p class="muted">{{ $transaction->inventory_deducted_at ? 'Deducted at '.$transaction->inventory_deducted_at->format('M j, Y g:i A') : 'No inventory deduction yet (legacy transactions are exempt).' }}</p>
-<table><thead><tr><th>Product</th><th>Required quantity</th></tr></thead><tbody>@forelse($transaction->products as $product)<tr><td>{{ $product->name }}</td><td>{{ $product->pivot->quantity }} {{ $product->unit }}</td></tr>@empty<tr><td colspan="2">No product requirements recorded.</td></tr>@endforelse</tbody></table>
+<table><thead><tr><th>Product</th><th>Required quantity</th></tr></thead><tbody>@forelse($transaction->products as $product)<tr><td>{{ $product->name }}</td><td>{{ \App\Support\WholeQuantity::display($product->pivot->quantity) }} {{ $product->unit }}</td></tr>@empty<tr><td colspan="2">No product requirements recorded.</td></tr>@endforelse</tbody></table>
 </section>
 @endsection

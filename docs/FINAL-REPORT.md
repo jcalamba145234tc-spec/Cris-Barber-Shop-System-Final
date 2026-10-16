@@ -1,3 +1,5 @@
+> Historical document — superseded for this repair by `README.md`, `docs/AUDIT-2026-10-15.md` and `docs/AUDIT-REPAIR-REPORT-2026-10-15.md`. Earlier test claims are not current evidence. Quantity precision is now whole numbers, not decimal display.
+
 # Final implementation report — Cris Barber Shop
 
 ## Outcome

@@ -137,7 +137,7 @@ class CashTenderTest extends TestCase
         $data = $this->checkout();
         $this->actingAs($this->admin)->post('/transactions', $data)->assertSessionHasNoErrors();
         $data['cash_received'] = '1000.00';
-        $this->post('/transactions', $data)->assertSessionHasNoErrors();
+        $this->post('/transactions', $data)->assertSessionHasErrors('checkout_token');
         $this->assertSame(1, Payment::count());
         $this->assertSame('500.00', Payment::firstOrFail()->cash_received);
         $this->assertSame('350.00', Payment::firstOrFail()->change_amount);

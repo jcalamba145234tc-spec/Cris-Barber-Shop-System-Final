@@ -47,6 +47,8 @@ Route::middleware(['auth', 'role:admin,barber'])->group(function () {
         Route::resource('inventory', InventoryController::class)->parameters(['inventory' => 'product']);
         Route::post('/inventory/{product}/restock', [InventoryController::class, 'restock'])->name('inventory.restock');
         Route::resource('customers', CustomerController::class);
+        Route::get('/barbers/{barber}/edit', [BarberController::class, 'edit'])->name('barbers.edit');
+        Route::put('/barbers/{barber}', [BarberController::class, 'update'])->name('barbers.update');
         Route::get('/barbers', [BarberController::class, 'index'])->name('barbers.index');
         Route::patch('/barbers/{barber}/status', [BarberController::class, 'updateStatus'])->name('barbers.status');
         Route::post('/barbers/{barber}/reset-password', [BarberController::class, 'resetPassword'])->name('barbers.password');

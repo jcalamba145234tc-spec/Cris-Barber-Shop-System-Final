@@ -52,7 +52,7 @@ class CustomerController extends Controller
     {
         $customer->delete();
 
-        return redirect()->route('customers.index')->with('status', 'Customer removed; transactions retained without personal link.');
+        return redirect()->route('customers.index')->with('status', 'Customer archived; profile and historical transaction links retained.');
     }
 
     private function validated(Request $request): array

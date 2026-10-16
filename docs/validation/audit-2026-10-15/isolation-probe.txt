@@ -1,0 +1,4 @@
+Intentional negative probe: externally supplied MySQL DB_CONNECTION/DB_DATABASE/DB_URL.
+Result: tests/TestCase.php refused application setup BEFORE RefreshDatabase and before connecting/migrating the external database.
+The probe produced expected setup errors, not business-test failures. The normal isolated final suite passed separately.
+PowerShell environment and PHP 8.3 were not executed on this Linux host.

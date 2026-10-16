@@ -1,0 +1,81 @@
+{
+  "checks": [
+    {
+      "label": "Admin login and required dashboard metric cards",
+      "status": "PASS"
+    },
+    {
+      "label": "Admin barber-details action opens implemented form",
+      "status": "PASS"
+    },
+    {
+      "label": "Decimal POS quantity rejected by browser validity",
+      "status": "PASS"
+    },
+    {
+      "label": "GCash reference visible, required, cash excluded",
+      "status": "PASS"
+    },
+    {
+      "label": "Cash excludes reference, retains decimal tender",
+      "status": "PASS"
+    },
+    {
+      "label": "Money preview calculates exact expected change",
+      "status": "PASS"
+    },
+    {
+      "label": "Cash completion shows immutable historical values",
+      "status": "PASS"
+    },
+    {
+      "label": "POS deducted whole-number stock",
+      "status": "PASS"
+    },
+    {
+      "label": "Decimal restock rejected by browser validity",
+      "status": "PASS"
+    },
+    {
+      "label": "Whole-number restock succeeds with movement history",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /dashboard",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /pos",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /inventory",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /inventory/create",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /barbers",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /barbers/01a13b34-f660-721e-8111-1b1455966afa/edit",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /profile",
+      "status": "PASS"
+    },
+    {
+      "label": "Mobile page has no document overflow: /attendance",
+      "status": "PASS"
+    },
+    {
+      "label": "No JavaScript runtime errors",
+      "status": "PASS"
+    }
+  ],
+  "errors": []
+}

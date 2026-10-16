@@ -42,7 +42,7 @@
             <p class="report-period">{{ $period['label'] }} · {{ ucfirst($period['type']) }} report</p>
         </div>
         <div class="report-actions">
-            <button type="button" onclick="window.print()">Print / Save as PDF</button>
+            <button type="button" id="print-report">Print / Save as PDF</button>
             <a class="button" href="{{ route('dashboard') }}">Back to dashboard</a>
         </div>
     </header>
@@ -80,6 +80,11 @@
     <p class="report-generated">Generated {{ $generatedAt->format('M j, Y g:i A') }}</p>
 </main>
 <script>
+    document.getElementById('print-report')?.addEventListener('click', () => window.print());
+</script>
+@if(request()->boolean('print'))
+<script>
     window.addEventListener('load', () => window.print());
 </script>
+@endif
 @endsection

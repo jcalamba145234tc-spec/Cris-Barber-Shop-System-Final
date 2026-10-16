@@ -72,7 +72,7 @@ class ServiceController extends Controller
             'duration_minutes' => ['required', 'integer', 'min:5', 'max:600'], 'active' => ['required', 'boolean'],
             'requirements' => ['nullable', 'array', 'max:100'],
             'requirements.*.product_id' => ['required', 'distinct', 'exists:products,id'],
-            'requirements.*.quantity' => ['nullable', 'numeric', 'decimal:0,3', 'min:0', 'max:999999'],
+            'requirements.*.quantity' => ['nullable', 'integer', 'min:0', 'max:999999'],
         ]);
         $requirements = collect($data['requirements'] ?? [])->filter(fn ($r) => (float) ($r['quantity'] ?? 0) > 0)
             ->mapWithKeys(fn ($r) => [$r['product_id'] => ['quantity' => $r['quantity']]])->all();

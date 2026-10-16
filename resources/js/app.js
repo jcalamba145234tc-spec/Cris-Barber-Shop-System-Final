@@ -143,3 +143,13 @@ document.querySelectorAll('form[method="POST"]').forEach((form) => {
         }
     });
 });
+
+// Native step validation plus an explicit message. Backend rules remain authoritative.
+document.querySelectorAll('input[type="number"][step="1"]').forEach((input) => {
+    const validateQuantity = () => {
+        input.setCustomValidity(input.value !== '' && !/^\d+$/.test(input.value)
+            ? 'Enter a whole-number quantity. Decimals and negative quantities are not allowed.' : '');
+    };
+    input.addEventListener('input', validateQuantity);
+    validateQuantity();
+});

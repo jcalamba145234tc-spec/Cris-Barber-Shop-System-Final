@@ -31,12 +31,7 @@ class ServiceSeeder extends Seeder
             $existingService = DB::table('services')->where('name', $service['name'])->first();
 
             if ($existingService) {
-                DB::table('services')->where('id', $existingService->id)->update([
-                    'price' => $service['price'],
-                    'duration_minutes' => $service['duration_minutes'],
-                    'updated_at' => now(),
-                ]);
-
+                // Existing catalogue prices/durations belong to the shop owner.
                 continue;
             }
 
