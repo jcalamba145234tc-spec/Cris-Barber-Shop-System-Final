@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\InventoryMovement;
 use App\Models\Product;
+use App\Support\WholeQuantity;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -82,23 +84,44 @@ class InventoryController extends Controller
     public function restock(Request $request, Product $product)
     {
         $data = $request->validate([
-            'quantity' => ['required', 'numeric', 'decimal:0,3', 'min:0.001', 'max:999999'],
+            'restock_token' => ['required', 'uuid'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:999999'],
             'notes' => ['nullable', 'string', 'max:255'],
         ]);
-        DB::transaction(function () use ($product, $data, $request) {
-            $locked = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
-            if (! $locked->active || (float) $locked->stock + (float) $data['quantity'] > 999999999.999) {
-                throw ValidationException::withMessages(['quantity' => 'Activate this product first or reduce the restock quantity.']);
-            }
-            Product::whereKey($locked->id)->update(['stock' => DB::raw('ROUND(stock + '.sprintf('%.3F', (float) $data['quantity']).', 3)')]);
-            $locked->refresh();
-            InventoryMovement::create([
-                'product_id' => $locked->id, 'user_id' => $request->user()->id, 'type' => 'restock',
-                'quantity' => $data['quantity'], 'balance' => $locked->stock, 'notes' => $data['notes'] ?? null,
-            ]);
-        }, 3);
+        try {
+            DB::transaction(function () use ($product, $data, $request) {
+                $locked = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+                $existing = InventoryMovement::where('restock_token', $data['restock_token'])->first();
+                if ($existing) {
+                    if ($existing->product_id !== $locked->id || (int) $existing->quantity !== (int) $data['quantity']) {
+                        throw ValidationException::withMessages(['restock_token' => 'This restock token belongs to a different stock change. Open a new form.']);
+                    }
 
-        return back()->with('status', 'Restock added to the existing quantity.');
+                    return;
+                }
+                $stock = WholeQuantity::require($locked->stock);
+                $quantity = (int) $data['quantity'];
+                if (! $locked->active || $stock + $quantity > 999999999) {
+                    throw ValidationException::withMessages(['quantity' => 'Activate this product first or reduce the restock quantity.']);
+                }
+                // Bound the update as well as the read, including engines without row locks.
+                $changed = Product::whereKey($locked->id)->where('stock', '<=', 999999999 - $quantity)
+                    ->update(['stock' => DB::raw('stock + '.$quantity)]);
+                if (! $changed) {
+                    throw ValidationException::withMessages(['quantity' => 'Stock capacity changed. Refresh and retry.']);
+                }
+                $locked->refresh();
+                InventoryMovement::create([
+                    'product_id' => $locked->id, 'user_id' => $request->user()->id, 'type' => 'restock',
+                    'restock_token' => $data['restock_token'],
+                    'quantity' => $quantity, 'balance' => $locked->stock, 'notes' => $data['notes'] ?? null,
+                ]);
+            }, 3);
+        } catch (UniqueConstraintViolationException $exception) {
+            throw ValidationException::withMessages(['restock_token' => 'This restock was already submitted. Review movement history before retrying.']);
+        }
+
+        return back()->with('status', 'Restock recorded; repeated submissions do not add stock twice.');
     }
 
     public function destroy(Product $product)
@@ -113,8 +136,8 @@ class InventoryController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:2000'],
             'category' => ['nullable', 'string', 'max:100'], 'unit' => ['required', 'string', 'max:30'],
-            'stock' => $creating ? ['required', 'numeric', 'decimal:0,3', 'min:0', 'max:999999999.999'] : ['prohibited'],
-            'low_stock_threshold' => ['required', 'numeric', 'decimal:0,3', 'min:0', 'max:999999999.999'],
+            'stock' => $creating ? ['required', 'integer', 'min:0', 'max:999999999'] : ['prohibited'],
+            'low_stock_threshold' => ['required', 'integer', 'min:0', 'max:999999999'],
             'cost' => ['nullable', 'numeric', 'decimal:0,2', 'min:0', 'max:99999999.99'],
             'active' => ['required', 'boolean'],
         ]);

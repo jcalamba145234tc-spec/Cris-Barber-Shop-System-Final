@@ -46,22 +46,26 @@ class AttendanceController extends Controller
     public function clock(Request $request)
     {
         $data = $request->validate(['action' => ['required', 'in:in,out'], 'barber_id' => ['prohibited'], 'date' => ['prohibited'], 'time_in' => ['prohibited'], 'time_out' => ['prohibited']]);
-        DB::transaction(function () use ($request, $data) {
-            $barber = Barber::where('user_id', $request->user()->id)->lockForUpdate()->firstOrFail();
-            abort_unless($barber->status === 'active', 403);
-            $attendance = Attendance::where('barber_id', $barber->id)->whereDate('date', today())->lockForUpdate()->first();
-            if ($data['action'] === 'in') {
-                if ($attendance) {
-                    throw ValidationException::withMessages(['action' => 'Today already has an attendance record. Ask the admin for corrections.']);
+        try {
+            DB::transaction(function () use ($request, $data) {
+                $barber = Barber::where('user_id', $request->user()->id)->lockForUpdate()->firstOrFail();
+                abort_unless($barber->status === 'active', 403);
+                $attendance = Attendance::where('barber_id', $barber->id)->whereDate('date', today())->lockForUpdate()->first();
+                if ($data['action'] === 'in') {
+                    if ($attendance) {
+                        throw ValidationException::withMessages(['action' => 'Today already has an attendance record. Ask the admin for corrections.']);
+                    }
+                    Attendance::create(['barber_id' => $barber->id, 'date' => today(), 'time_in' => now(), 'status' => 'present']);
+                } else {
+                    if (! $attendance?->time_in || $attendance->time_out) {
+                        throw ValidationException::withMessages(['action' => 'Clock in first; clock-out can only be recorded once.']);
+                    }
+                    $attendance->update(['time_out' => now()]);
                 }
-                Attendance::create(['barber_id' => $barber->id, 'date' => today(), 'time_in' => now(), 'status' => 'present']);
-            } else {
-                if (! $attendance?->time_in || $attendance->time_out) {
-                    throw ValidationException::withMessages(['action' => 'Clock in first; clock-out can only be recorded once.']);
-                }
-                $attendance->update(['time_out' => now()]);
-            }
-        }, 3);
+            }, 3);
+        } catch (UniqueConstraintViolationException $exception) {
+            throw ValidationException::withMessages(['action' => 'Attendance already exists for this date. Refresh before retrying.']);
+        }
 
         return back()->with('status', 'Attendance recorded using server time.');
     }
@@ -84,7 +88,11 @@ class AttendanceController extends Controller
     public function update(Request $request, Attendance $attendance)
     {
         $data = $this->validated($request, $attendance);
-        DB::transaction(fn () => Attendance::whereKey($attendance->id)->lockForUpdate()->firstOrFail()->update($data));
+        try {
+            DB::transaction(fn () => Attendance::whereKey($attendance->id)->lockForUpdate()->firstOrFail()->update($data));
+        } catch (UniqueConstraintViolationException $exception) {
+            throw ValidationException::withMessages(['date' => 'This barber already has attendance on that date.']);
+        }
 
         return back()->with('status', 'Attendance corrected by admin.');
     }

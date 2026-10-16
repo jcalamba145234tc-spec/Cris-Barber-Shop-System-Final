@@ -301,19 +301,22 @@ class ShopManagementTest extends TestCase
         $this->get('/transactions')->assertDontSee($transaction->id);
     }
 
-    public function test_history_edit_and_remove_preserve_stock_and_audit(): void
+    public function test_completed_history_customer_correction_preserves_date_stock_and_audit(): void
     {
         $transaction = app(TransactionWorkflow::class)->create($this->checkout(), $this->admin);
         $customer = Customer::create(['name' => 'Correct customer']);
-        $this->actingAs($this->admin)->put('/transactions/'.$transaction->id, ['customer_id' => $customer->id, 'transaction_date' => now()->subHour()->format('Y-m-d\TH:i')])->assertSessionHasNoErrors();
+        $date = $transaction->transaction_date->format('Y-m-d\TH:i');
+        $original = $transaction->transaction_date->format('Y-m-d H:i:s');
+        $this->actingAs($this->admin)->put('/transactions/'.$transaction->id, ['customer_id' => $customer->id, 'transaction_date' => $date])->assertSessionHasNoErrors();
         $this->assertEquals($customer->id, $transaction->fresh()->customer_id);
-        $this->put('/transactions/'.$transaction->id, ['total_amount' => 1, 'transaction_date' => now()->subMinute()->format('Y-m-d\TH:i')])->assertSessionHasErrors('total_amount');
-        $this->delete('/transactions/'.$transaction->id)->assertRedirect('/history');
-        $this->assertSoftDeleted('transactions', ['id' => $transaction->id]);
+        $this->put('/transactions/'.$transaction->id, ['transaction_date' => now()->subHour()->format('Y-m-d\TH:i')])->assertSessionHasErrors('transaction_date');
+        $this->put('/transactions/'.$transaction->id, ['total_amount' => 1, 'transaction_date' => $date])->assertSessionHasErrors('total_amount');
+        $this->delete('/transactions/'.$transaction->id)->assertSessionHasErrors('transaction');
+        $this->assertSame($original, $transaction->fresh()->transaction_date->format('Y-m-d H:i:s'));
+        $this->assertFalse($transaction->fresh()->trashed());
         $this->assertEquals(8, $this->product->fresh()->stock);
-        $this->assertSame(0, Transaction::valid()->count());
+        $this->assertSame(1, Transaction::valid()->count());
         $this->assertDatabaseHas('inventory_movements', ['transaction_id' => $transaction->id]);
-        $this->get('/transactions/'.$transaction->id)->assertNotFound();
     }
 
     public function test_inventory_crud_restock_and_monitoring(): void
@@ -321,11 +324,11 @@ class ShopManagementTest extends TestCase
         $this->actingAs($this->admin)->post('/inventory', ['name' => 'Shampoo', 'category' => 'Hair', 'stock' => 10, 'unit' => 'bottle', 'low_stock_threshold' => 5, 'active' => 1])->assertSessionHasNoErrors();
         $product = Product::where('name', 'Shampoo')->firstOrFail();
         $this->assertSame('In Stock', $product->stock_status);
-        $this->post('/inventory/'.$product->id.'/restock', ['quantity' => 20])->assertSessionHasNoErrors();
+        $this->post('/inventory/'.$product->id.'/restock', ['quantity' => 20, 'restock_token' => (string) Str::uuid()])->assertSessionHasNoErrors();
         $this->assertEquals(30, $product->fresh()->stock);
         $this->assertDatabaseHas('inventory_movements', ['product_id' => $product->id, 'type' => 'restock', 'quantity' => 20]);
-        $this->post('/inventory/'.$product->id.'/restock', ['quantity' => -1])->assertSessionHasErrors('quantity');
-        $this->post('/inventory/'.$product->id.'/restock', ['quantity' => 0])->assertSessionHasErrors('quantity');
+        $this->post('/inventory/'.$product->id.'/restock', ['quantity' => -1, 'restock_token' => (string) Str::uuid()])->assertSessionHasErrors('quantity');
+        $this->post('/inventory/'.$product->id.'/restock', ['quantity' => 0, 'restock_token' => (string) Str::uuid()])->assertSessionHasErrors('quantity');
         $this->put('/inventory/'.$product->id, ['name' => 'Updated Shampoo', 'unit' => 'bottle', 'category' => 'Hair', 'low_stock_threshold' => 35, 'active' => 1])->assertSessionHasNoErrors();
         $this->assertSame('Low Stock', $product->fresh()->stock_status);
         $this->put('/inventory/'.$product->id, ['stock' => -1])->assertSessionHasErrors('stock');
@@ -453,14 +456,13 @@ class ShopManagementTest extends TestCase
         $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_id');
     }
 
-    public function test_restocks_do_not_modify_transaction_requirements_and_fractional_stock_supported(): void
+    public function test_restocks_preserve_whole_number_transaction_snapshots(): void
     {
-        $this->service->products()->sync([$this->product->id => ['quantity' => 0.125]]);
         $transaction = $this->queued(['quantity' => 3]);
+        $this->actingAs($this->admin)->post('/inventory/'.$this->product->id.'/restock', ['quantity' => 4, 'restock_token' => (string) Str::uuid()])->assertSessionHasNoErrors();
         app(TransactionWorkflow::class)->complete($transaction, $this->admin);
-        $this->assertEquals(9.625, $this->product->fresh()->stock);
-        $this->actingAs($this->admin)->post('/inventory/'.$this->product->id.'/restock', ['quantity' => 0.375])->assertSessionHasNoErrors();
-        $this->assertEquals(10, $this->product->fresh()->stock);
+        $this->assertEquals(8, $this->product->fresh()->stock);
+        $this->assertEquals(6, $transaction->products()->first()->pivot->quantity);
     }
 
     public function test_repeated_checkout_token_is_idempotent_even_after_completion(): void
@@ -491,16 +493,13 @@ class ShopManagementTest extends TestCase
         Payment::create(['transaction_id' => $transaction->id, 'payment_method' => 'gcash', 'gcash_reference_no' => '987654321', 'gcash_reference_key' => '987654321', 'verification_status' => 'pending', 'amount' => 150]);
     }
 
-    public function test_fractional_decimal_consumption_reaches_exact_zero(): void
+    public function test_fractional_service_consumption_is_rejected_server_side(): void
     {
-        $this->product->update(['stock' => 0.3]);
-        $this->service->products()->sync([$this->product->id => ['quantity' => 0.1]]);
-        for ($i = 0; $i < 3; $i++) {
-            $this->actingAs($this->admin)->post('/transactions', $this->checkout())->assertSessionHasNoErrors();
-        }
-        $this->assertEquals(0, $this->product->fresh()->stock);
-        $this->assertSame('Out of Stock', $this->product->fresh()->stock_status);
-        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_id');
+        $data = ['name' => 'Fractional', 'price' => '25.50', 'duration_minutes' => 30, 'active' => 1,
+            'requirements' => [['product_id' => $this->product->id, 'quantity' => '0.1']]];
+        $this->actingAs($this->admin)->post('/services', $data)->assertSessionHasErrors('requirements.0.quantity');
+        $this->assertDatabaseMissing('services', ['name' => 'Fractional']);
+        $this->assertEquals(10, $this->product->fresh()->stock);
     }
 
     public function test_customer_crud_search_and_safe_transaction_retention(): void
@@ -512,7 +511,9 @@ class ShopManagementTest extends TestCase
         $this->put('/customers/'.$customer->id, ['name' => 'Client Updated'])->assertSessionHasNoErrors();
         $transaction = app(TransactionWorkflow::class)->create($this->checkout(['customer_id' => $customer->id]), $this->admin);
         $this->delete('/customers/'.$customer->id)->assertRedirect('/customers');
-        $this->assertNull($transaction->fresh()->customer_id);
+        $this->assertSame($customer->id, $transaction->fresh()->customer_id);
+        $this->assertSoftDeleted('customers', ['id' => $customer->id]);
+        $this->assertSame('Client Updated', $transaction->fresh()->customer->name);
         $this->assertEquals(150, $transaction->fresh()->total_amount);
     }
 

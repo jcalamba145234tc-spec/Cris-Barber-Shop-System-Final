@@ -40,7 +40,8 @@
                     </form>
                 </td>
                 <td>
-                    @if($barber->user_id)
+                    @if($barber->user?->role === 'barber')
+                        <a href="{{ route('barbers.edit',$barber) }}">Edit details</a>
                         <details><summary>Reset password</summary><form method="POST" action="{{ route('barbers.password',$barber) }}">@csrf<label>Temporary password<input type="password" name="password" minlength="8" autocomplete="new-password" required></label><label>Confirm<input type="password" name="password_confirmation" minlength="8" autocomplete="new-password" required></label><button>Reset Password</button></form></details>
                     @else
                         No linked account

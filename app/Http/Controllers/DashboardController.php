@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Barber;
 use App\Models\Customer;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
@@ -49,13 +50,15 @@ class DashboardController extends Controller
 
         return view('dashboard', $data + [
             'totalCustomers' => Customer::count(),
+            'totalBarbers' => Barber::count(),
+            'totalServices' => Service::count(),
+            'totalPayments' => Payment::whereHas('transaction')->count(),
             'availableBarbers' => Barber::available()->count(),
             'totalRevenue' => (clone $valid)->sum('total_amount'),
             'lowStock' => Product::where('active', true)->whereColumn('stock', '<=', 'low_stock_threshold')->count(),
             'todayRevenue' => (clone $valid)->whereDate('transaction_date', $selectedDate)->sum('total_amount'),
             'monthRevenue' => (clone $valid)->whereBetween('transaction_date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])->sum('total_amount'),
             'monthShopShare' => (clone $valid)->whereBetween('transaction_date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])->sum('shop_share'),
-            'queueCount' => Transaction::whereIn('status', ['queued', 'in_progress', 'ready'])->count(),
         ]);
     }
 }

@@ -10,7 +10,7 @@ class Product extends Model
 
     protected function casts(): array
     {
-        return ['active' => 'boolean', 'stock' => 'decimal:3', 'low_stock_threshold' => 'decimal:3'];
+        return ['active' => 'boolean', 'stock' => 'decimal:3', 'low_stock_threshold' => 'decimal:3', 'cost' => 'decimal:2'];
     }
 
     public function services()

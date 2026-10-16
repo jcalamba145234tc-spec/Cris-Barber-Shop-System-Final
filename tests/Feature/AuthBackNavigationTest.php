@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Barber;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,6 +34,7 @@ class AuthBackNavigationTest extends TestCase
     public function test_barber_returns_to_own_current_page_not_sign_in(): void
     {
         $barber = User::factory()->create(['role' => 'barber']);
+        Barber::create(['user_id' => $barber->id, 'first_name' => 'Test', 'last_name' => 'Barber', 'hired_date' => today()]);
         $this->actingAs($barber)->get('/profile')->assertOk();
         $this->get('/login')->assertRedirect('/profile');
         $this->get('/inventory')->assertForbidden();

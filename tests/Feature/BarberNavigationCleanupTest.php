@@ -63,10 +63,11 @@ class BarberNavigationCleanupTest extends TestCase
         }
     }
 
-    public function test_admin_dashboard_shortcuts_and_navigation_are_unchanged(): void
+    public function test_admin_dashboard_navigation_is_kept_and_quick_shortcuts_are_removed(): void
     {
         $this->actingAs($this->admin)->get('/dashboard')->assertOk()
-            ->assertSee('Point of Sale')->assertSee('Queue / Transactions')->assertSee('Open POS')->assertSee('Open queue (');
+            ->assertSee('Point of Sale')->assertSee('Queue / Transactions')
+            ->assertDontSee('Open POS')->assertDontSee('Open queue (');
     }
 
     public function test_old_earnings_bookmark_still_resolves_without_a_menu_entry(): void

@@ -1,3 +1,5 @@
+> Historical document — superseded for this repair by `README.md`, `docs/AUDIT-2026-10-15.md` and `docs/AUDIT-REPAIR-REPORT-2026-10-15.md`. Earlier test claims are not current evidence. Quantity precision is now whole numbers, not decimal display.
+
 # Inventory two-decimal display update
 
 Stock and low-stock threshold values display two decimal places on the inventory list and product details. The edit page's read-only current-stock summary uses the same formatting.

@@ -93,7 +93,7 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
-        return view('transactions.edit', ['transaction' => $transaction, 'customers' => Customer::orderBy('name')->get()]);
+        return view('transactions.edit', ['transaction' => $transaction, 'customers' => Customer::withTrashed()->where(fn ($query) => $query->whereNull('deleted_at')->orWhere('id', $transaction->customer_id))->orderBy('name')->get()]);
     }
 
     public function update(Request $request, Transaction $transaction)
@@ -101,7 +101,7 @@ class TransactionController extends Controller
         $payment = $transaction->payment;
         $editableReference = $payment?->payment_method === 'gcash' && ! in_array($transaction->status, ['completed', 'cancelled']);
         $data = $request->validate([
-            'customer_id' => ['nullable', 'exists:customers,id'],
+            'customer_id' => ['nullable', Rule::exists('customers', 'id')->where(fn ($query) => $query->whereNull('deleted_at')->orWhere('id', $transaction->customer_id))],
             'transaction_date' => ['required', 'date_format:Y-m-d\TH:i', 'before_or_equal:now'],
             'gcash_reference_no' => $editableReference
                 ? ['required', 'regex:/^[0-9]{6,30}$/', Rule::unique('payments', 'gcash_reference_no')->ignore($payment->id)]
@@ -114,6 +114,12 @@ class TransactionController extends Controller
         try {
             DB::transaction(function () use ($transaction, $data) {
                 $locked = Transaction::whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+                if (in_array($locked->status, ['completed', 'cancelled'], true)) {
+                    if ($data['transaction_date'] !== ($locked->transaction_date ?? $locked->created_at)->format('Y-m-d\TH:i')) {
+                        throw ValidationException::withMessages(['transaction_date' => 'Completed/cancelled transaction dates cannot be changed. No approved financial correction workflow exists.']);
+                    }
+                    unset($data['transaction_date']);
+                }
                 if (isset($data['gcash_reference_no'])) {
                     if (in_array($locked->status, ['completed', 'cancelled'])) {
                         throw ValidationException::withMessages(['gcash_reference_no' => 'Completed/cancelled payment records are immutable.']);
@@ -134,13 +140,16 @@ class TransactionController extends Controller
             throw ValidationException::withMessages(['gcash_reference_no' => 'This GCash reference is already used.']);
         }
 
-        return redirect()->route('transactions.show', $transaction)->with('status', 'Customer/date corrected. Financial and inventory snapshots preserved.');
+        return redirect()->route('transactions.show', $transaction)->with('status', 'Customer or open-record date corrected. Financial and inventory snapshots preserved.');
     }
 
     public function destroy(Transaction $transaction)
     {
         DB::transaction(function () use ($transaction) {
             $locked = Transaction::whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+            if ($locked->status === 'completed') {
+                throw ValidationException::withMessages(['transaction' => 'Completed sales cannot be removed without an approved financial correction workflow.']);
+            }
             $locked->delete();
         });
 

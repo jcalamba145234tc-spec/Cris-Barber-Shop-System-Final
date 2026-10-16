@@ -205,6 +205,7 @@ td button:hover { border-color: #e7c4bd; background: #fff0ed; color: #8e2e23; bo
 :root.dark input:not([type="checkbox"]),
 :root.dark select,
 :root.dark textarea { border-color: var(--line); background-color: #18211b; color: var(--ink); }
+:root.dark label { color: var(--muted); }
 :root.dark input::placeholder { color: #87948a; }
 :root.dark .dashboard-tabs,
 :root.dark .appearance-setting { border-color: var(--line); background: #252f28; }
@@ -257,3 +258,29 @@ summary { cursor: pointer; padding: 12px 0; font-weight: 650; }
 [hidden] { display: none !important; }
 @media (max-width: 640px) { .nav-links > a { padding: 8px; font-size: .8rem; } .nav-links form { margin-left: 0; } .details-grid { grid-template-columns: 1fr; } }
 @media print { .shop-nav { display: none; } }
+
+/* Reports & exports panel */
+.export-panel { margin: 22px 0 0; padding: 22px; border: 1px solid var(--line); border-radius: 15px; background: color-mix(in srgb, var(--surface) 94%, var(--line)); }
+.export-head h3 { margin: 0; color: var(--ink); font-size: 1.02rem; letter-spacing: -.01em; }
+.export-head p { margin: 5px 0 0; font-size: .88rem; }
+.export-panel fieldset { min-width: 0; margin: 20px 0 0; padding: 0; border: 0; }
+.export-panel legend { padding: 0; margin-bottom: 10px; color: var(--muted); font-size: .76rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.range-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.range-pill { position: relative; margin: 0; }
+.range-pill input { position: absolute; width: 1px; min-height: 0; height: 1px; margin: 0; padding: 0; opacity: 0; }
+.range-pill span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 17px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: .9rem; font-weight: 600; cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+.range-pill span:hover { border-color: var(--brand); }
+.range-pill input:checked + span { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 13%, var(--surface)); color: var(--brand); }
+.range-pill input:focus-visible + span { outline: 3px solid rgb(23 107 85 / 28%); outline-offset: 2px; }
+.export-field { max-width: 260px; margin-top: 16px; }
+.export-field label { margin: 0; color: var(--muted); font-size: .8rem; }
+.export-summary { margin: 18px 0 0; color: var(--muted); font-size: .92rem; }
+.export-summary strong { color: var(--ink); }
+.export-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.export-actions button { min-height: 44px; }
+.export-secondary { border-color: var(--line); background: var(--surface); color: var(--ink); }
+.export-secondary:hover { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--surface)); color: var(--brand); box-shadow: none; }
+:root.dark .export-actions button.export-secondary:not(.profile-menu-item):not(.profile-menu-trigger):not(.dashboard-tab) { border-color: var(--line); background: #29342d; color: var(--ink); }
+:root.dark .export-actions button.export-secondary:not(.profile-menu-item):not(.profile-menu-trigger):not(.dashboard-tab):hover { border-color: var(--brand); background: #354239; color: var(--ink); }
+[x-cloak] { display: none !important; }
+@media (max-width: 640px) { .export-panel { padding: 18px 16px; } .export-field { max-width: none; } .export-actions button { width: 100%; } }

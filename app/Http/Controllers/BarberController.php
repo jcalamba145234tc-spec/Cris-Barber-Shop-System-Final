@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Barber;
 use App\Models\User;
+use App\Rules\ShopEmailDomain;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class BarberController extends Controller
@@ -35,6 +37,40 @@ class BarberController extends Controller
         }
 
         return view('barbers.index', ['barbers' => $query->orderBy('first_name')->paginate(20)->withQueryString()]);
+    }
+
+    public function edit(Request $request, Barber $barber)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        abort_unless($barber->user?->role === 'barber', 422);
+
+        return view('barbers.edit', ['barber' => $barber]);
+    }
+
+    public function update(Request $request, Barber $barber)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        $user = User::whereKey($barber->user_id)->where('role', 'barber')->firstOrFail();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', new ShopEmailDomain($user->email), Rule::unique('users', 'email')->ignore($user->id)],
+            'phone_number' => ['nullable', 'string', 'max:20'],
+            'hired_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'role' => ['prohibited'], 'user_id' => ['prohibited'], 'password' => ['prohibited'],
+        ]);
+        DB::transaction(function () use ($barber, $user, $data) {
+            $locked = Barber::whereKey($barber->id)->lockForUpdate()->firstOrFail();
+            $account = User::whereKey($user->id)->where('role', 'barber')->lockForUpdate()->firstOrFail();
+            $name = preg_split('/\s+/', trim($data['name']), 2);
+            $locked->update(['first_name' => mb_substr($name[0], 0, 100), 'last_name' => mb_substr($name[1] ?? '-', 0, 100),
+                'phone_number' => $data['phone_number'] ?? null, 'hired_date' => $data['hired_date']]);
+            if ($account->email !== $data['email']) {
+                $account->email_verified_at = null;
+            }
+            $account->fill(['name' => $data['name'], 'email' => $data['email']])->save();
+        });
+
+        return redirect()->route('barbers.index')->with('status', 'Barber details updated; account identity and history retained.');
     }
 
     public function updateStatus(Request $request, Barber $barber)

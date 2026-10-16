@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Barber;
 use App\Models\User;
 use App\Rules\ShopEmailDomain;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,6 +49,9 @@ class ShopEmailDomainTest extends TestCase
     {
         foreach (['admin', 'barber'] as $role) {
             $user = User::factory()->create(['role' => $role, 'email' => $role.'@legacy.test']);
+            if ($role === 'barber') {
+                Barber::create(['user_id' => $user->id, 'first_name' => 'Legacy', 'last_name' => 'Barber', 'hired_date' => today()]);
+            }
             $data = ['name' => $user->name, 'email' => $role.'@gmail.com'];
             $this->actingAs($user)->put('/profile', $data)->assertSessionHasErrors('email');
             $this->assertSame($role.'@legacy.test', $user->fresh()->email);
@@ -62,6 +66,9 @@ class ShopEmailDomainTest extends TestCase
     {
         foreach (['admin', 'barber'] as $role) {
             $user = User::factory()->create(['role' => $role, 'email' => $role.'@gmail.com', 'password' => 'Old-password-123']);
+            if ($role === 'barber') {
+                Barber::create(['user_id' => $user->id, 'first_name' => 'Legacy', 'last_name' => 'Barber', 'hired_date' => today()]);
+            }
             $this->post('/login', ['email' => $user->email, 'password' => 'Old-password-123'])->assertRedirect('/dashboard');
             $this->put('/profile', ['name' => $user->name, 'email' => $user->email, 'password' => 'New-password-123', 'password_confirmation' => 'New-password-123'])->assertRedirect('/profile')->assertSessionHasNoErrors();
             $this->assertTrue(Hash::check('New-password-123', $user->fresh()->password));

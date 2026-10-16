@@ -65,6 +65,14 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'The provided credentials do not match our records.'])->onlyInput('email');
         }
 
+        if ($request->user()->role === 'barber' && ! Barber::where('user_id', $request->user()->id)->where('status', '!=', 'inactive')->exists()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors(['email' => 'This barber account is inactive. Contact the administrator.'])->onlyInput('email');
+        }
+
         $request->session()->regenerate();
         $request->user()->update(['last_login_at' => now()]);
 
