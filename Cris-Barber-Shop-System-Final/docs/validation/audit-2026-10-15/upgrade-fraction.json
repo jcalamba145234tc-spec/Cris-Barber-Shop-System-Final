@@ -1,0 +1,8 @@
+{
+    "migration": "BLOCKED",
+    "reason": "Integer conversion blocked: {\"table\":\"products\",\"record\":1,\"column\":\"stock\",\"value\":\"2.5\"}. Run shop:audit-data and obtain owner reconciliation. No quantities converted.",
+    "all_product_values_preserved": true,
+    "stock_before": "2.5",
+    "stock_after": "2.5",
+    "scenario": "legacy-fractional"
+}

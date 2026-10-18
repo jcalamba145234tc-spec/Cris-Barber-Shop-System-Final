@@ -1,0 +1,28 @@
+{
+  "baseline_commit": "574a6303233e5e7fbad16f3ebaf25cb42c30e56d",
+  "branch": "main",
+  "versions": {
+    "laravel": "13.32.0",
+    "php": "8.4.24",
+    "composer": "2.10.3",
+    "node": "24.14.1",
+    "npm": "11.11.0",
+    "sqlite": "3.40.0"
+  },
+  "tests": {
+    "passed": 136,
+    "assertions": 932,
+    "failed": 0,
+    "normal_suite_warnings": 0
+  },
+  "new_regression_tests": 28,
+  "browser_checks": 19,
+  "browser_passed": 19,
+  "php_style": "PASS",
+  "frontend_build": "PASS",
+  "committed": false,
+  "pushed": false,
+  "production_database_accessed": false,
+  "migration_data": "Synthetic only; rich upgrade 11 tables preserved; fractions blocked without change",
+  "readiness": "Ready for local testing"
+}

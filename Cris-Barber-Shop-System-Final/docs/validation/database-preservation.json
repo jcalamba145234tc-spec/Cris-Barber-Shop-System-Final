@@ -1,0 +1,5 @@
+{
+  "original_database_sha256_unchanged": true,
+  "existing_table_counts_preserved_after_upgrade_rollback_reupgrade": true,
+  "foreign_key_violations": 0
+}

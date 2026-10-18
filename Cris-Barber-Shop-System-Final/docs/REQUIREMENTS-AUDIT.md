@@ -1,0 +1,39 @@
+> Historical document — superseded for this repair by `README.md`, `docs/AUDIT-2026-10-15.md` and `docs/AUDIT-REPAIR-REPORT-2026-10-15.md`. Earlier test claims are not current evidence. Quantity precision is now whole numbers, not decimal display.
+
+# Final requirement audit (A–U)
+
+| Section | Implementation / verification |
+| --- | --- |
+| A Admin authentication | Public `/register` GET/POST removed. Owner-only `shop:admin` hidden-password CLI; existing email/password login, logout/reset retained; login/reset throttled; own name/email/password updates with current-password check. Hashed passwords, hidden user fields, role middleware. Auth/CLI/profile tests. |
+| B Admin navigation | Shared responsive role-aware navigation; active-route highlighting; dashboard, POS, queue, customers, services, barbers, inventory, attendance, history, account and POST logout. Render/browser checks. |
+| C Dashboard | Actual customer profile count, active/manual-available/no-open-queue barber count, completed+verified revenue, active product low-stock count including zero stock. Date/month sales and stored shop shares retained; Pending GCash card removed, verification retained. Count/report tests. |
+| D POS | Only active stock-eligible services; aggregate quantity availability checked on server. Selected barber/customer/service, price, quantity, live total, payment/status, available barber count. Service/price/product requirements snapshot; no Transaction Rate UI. Cash completion or queued work. Stock/idempotency/browser tests. |
+| E GCash | Reference hidden/disabled/not required for cash; visible/enabled/required for GCash. Backend validates 6–30 digits, reference uniqueness and new DB unique key. Manual verify/flag and separate completion; admin may correct an uncompleted reference, which resets verification. Validation + browser tests. |
+| F History/services | Transaction view, admin-only safe edit and confirmed soft removal. Completed financial/stock snapshots immutable; customer/date edits supported. Service add/view/edit/deactivate with requirements and status; historical links preserved. CRUD/permission/browser confirmation tests. |
+| G Inventory | Product CRUD/deactivation, category/unit/cost/description/threshold/status/timestamps; opening stock, additive restock, movement ledger, search/filter/pagination. Service-products relationship; stock eligibility and completion consumption. Decimal quantity/boundary/rollback tests. |
+| H Scope | `SCOPE-AND-LIMITATIONS.md` explicitly limits inventory to manual recording/monitoring/restocks/completed-service consumption. No supplier, ordering, scanner, warehouse or external synchronization added. |
+| I Filters | Query-backed transactions/history date range, barber, service, payment, status; inventory category, stock status, active status; barber status/availability; attendance date/barber/status. Filter validation and query tests. |
+| J Barber menu/no money | Separate menu, no admin modules/POS. POST checkout, price/payment, verification, inventory/services, accounts, reports, deletion blocked by role middleware. Own queue status-only endpoint prohibits financial fields and cannot mark financial completion. UI/HTTP mutation tests. |
+| K Earnings | Own today's/total/month/selected period stored barber shares only; completed, verified, non-deleted transactions. Existing 50/50 split retained, server-calculated in cents; no manual earnings table/UI. Ownership/report tests. |
+| L Attendance | Own today server-time clock-in/out; own history; one row/day; admin monitoring/entry/corrections; present/late/absent/on-leave; hours; historical barber edits forbidden. Validation/uniqueness/ownership/browser tests. |
+| M Barber history | Database-scoped own transactions, dates, services, customers, statuses and earned share; other barber URLs/status mutations return 403. Ownership tests. |
+| N RBAC | `EnsureRole` middleware applied to route groups; endpoint ownership checks and workflow admin guards. Unsupported existing roles cannot access either shop-management role, and no users deleted. Role isolation tests. |
+| O Database | Original tables/relationships/data inspected before changes. One additive migration creates only absent equivalents and extends current tables. FK/index/unique/timestamps; safe restrictive/null delete relationships. Original DB byte comparison, row-count/FK preservation, upgrade/rollback/reupgrade on separate copies. |
+| P UX | Existing visual colors/logo/theme/cards/tables retained; shared navigation, responsive grids, scrollable tables, search/filters/pagination, confirmation dialogs, alerts/validation, saving indication, empty/disabled states. Desktop/mobile/dark-theme browser checks. |
+| Q Validation/security | Backend prices/quantities/restocks/payments/reference/availability/ownership/attendance validation. Transactional workflow, deterministic row-lock order, aggregate snapshots, rounded conditional stock updates, rollback and completion idempotency; unique checkout/reference tokens. Insufficient stock never yields negative stock; retries do not deduct twice. Tests include exact/fractional zero and multi-product rollback. |
+| R Search/filter | Server-side customers/barbers/services/products/transactions search; bounded input and pagination; query-backed filters, not UI-only. Search/filter tests. |
+| S Code quality | Existing controllers/routes and stack extended; Eloquent relationships/models, FormRequest, middleware, workflow service, DB transactions and Blade layouts/partials. Business calculations removed from Blade; formatter/linter/Blade/route cache validation. Existing unrelated Laravel scaffolding preserved. |
+| T Testing | Admin/barber authentication/accounts/dashboard/navigation/POS/payments/history/services/inventory/restock/stock/filters/barbers/attendance/own earnings/ownership tested. In-memory SQLite regression suite plus real local browser flows and disposable database migration checks. Validation records included. |
+| U Process/report | Inspection + technical assessment + incremental plan before implementation; safe copy migrations; regression fixes; build/startup checks; this A–U audit; `FINAL-REPORT.md` with files, migrations, features, security, stock/POS/admin/barber, tests, limitations and deployment commands. |
+
+## Important boundaries (not silent omissions)
+
+- Admin email login is retained; username login is not invented because the uploaded system has no username field.
+- Account creation for administrators is owner-only terminal access. Admin web creation is barber-only.
+- History editing deliberately does **not** rewrite completed financial/stock history. Removal is soft deletion; products/services use deactivation. This satisfies management actions while retaining audit data.
+- No actual GCash gateway existed; references/verification are manual and do not verify external receipt of money.
+- No customer-login flow existed; this update adds customer records, not an unsolicited public customer registration feature.
+- Product requirements must be configured by the owner. Existing services are not assigned invented consumption amounts.
+- Barber compensation remains the existing 50/50 split. No payroll, shift start, automatic lateness rule or separate manual earnings structure is invented.
+- No live database was migrated or destroyed. Upgrade/rollback were tested on copies only. Down migrations remove newly introduced data, so reverting a deployed feature with operational records requires a backup/review rather than casual rollback.
+- Local testing uses SQLite and headless Chromium; production load/concurrency, real payment receipts, mail delivery and other database engines require staging/owner acceptance testing.

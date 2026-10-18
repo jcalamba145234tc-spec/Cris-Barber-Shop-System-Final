@@ -1,0 +1,7 @@
+{
+    "migration": "PASS",
+    "all_product_values_preserved": true,
+    "stock_before": "10",
+    "stock_after": "10",
+    "scenario": "legacy-whole"
+}

@@ -1,0 +1,163 @@
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true
+
+   PASS  Tests\Feature\AuditRepairsTest
+  ✓ opening stock rejects fractional negative and oversized quantities   0.27s
+  ✓ zero and positive whole opening quantities preserve decimal costs    0.04s
+  ✓ edit rejects fractional threshold and direct stock overwrite         0.02s
+  ✓ restock rejects decimal negative zero and missing token              0.03s
+  ✓ identical restock is idempotent and token mismatch is rejected       0.02s
+  ✓ pos rejects decimal negative and zero quantity without writes        0.03s
+  ✓ workflow cannot bypass integer validation                            0.01s
+  ✓ odd cent monetary values preserve existing half up split             0.02s
+  ✓ gcash replay returns one pending receipt and rejects changed payloa… 0.02s
+  ✓ verification rechecks stock without deduction then completion reche… 0.03s
+  ✓ completed payment cannot be flagged and sales remain eligible        0.05s
+  ✓ inactive barber cannot login or use existing session but can logout  0.04s
+  ✓ deactivation blocks existing queue status write                      0.02s
+  ✓ dashboard counts all catalogue barbers and nondeleted payment rows   0.02s
+  ✓ archived customer stays linked but cannot be selected for new sale   0.03s
+  ✓ completed date and removal protection do not change history or tota… 0.04s
+  ✓ queued date correction and soft removal remain available             0.02s
+  ✓ guarded conversion aborts without rounding legacy values             0.03s
+  ✓ preflight is read only and detects synthetic fractional records      0.02s
+  ✓ sqlite rejects fractional inventory even through direct database wr… 0.01s
+  ✓ payment unique constraint prevents second receipt for transaction    0.02s
+  ✓ quantity inputs and movement display are integral money remains dec… 0.03s
+  ✓ password reset token is single use and password is hashed            0.23s
+  ✓ report filters reject invalid dates and empty reports stream         0.02s
+  ✓ admin can edit barber identity without replacing history             0.02s
+  ✓ barber account edit cannot be used for role escalation or by barber… 0.02s
+  ✓ malformed checkout token is validation error not database error      0.02s
+  ✓ database failure during payment insert rolls back checkout and snap… 0.01s
+
+   PASS  Tests\Feature\AuthBackNavigationTest
+  ✓ login and protected pages are not cached                             0.05s
+  ✓ back to login returns admin to most recent page including filters    0.02s
+  ✓ barber returns to own current page not sign in                       0.01s
+  ✓ logout clears last page and back cannot access protected pages       0.01s
+  ✓ redirect falls back to dashboard without a safe last page            0.01s
+
+   PASS  Tests\Feature\BarberDashboardBreakdownTest
+  ✓ barber dashboard shows daily sales breakdown for selected month      0.02s
+
+   PASS  Tests\Feature\BarberNavigationCleanupTest
+  ✓ barber menu omits my earnings but retains queue and attendance       0.01s
+  ✓ dashboard has no duplicate queue or attendance quick links           0.01s
+  ✓ barber earnings remain on dashboard and reset returns to dashboard   0.02s
+  ✓ queue and attendance still open from barber navigation               0.02s
+  ✓ admin dashboard shortcuts and navigation are unchanged               0.01s
+  ✓ old earnings bookmark still resolves without a menu entry            0.02s
+
+   PASS  Tests\Feature\BarberStatusDropdownTest
+  ✓ barber page has one compact auto saving status dropdown              0.02s
+  ✓ each dropdown choice updates the existing status and availability    0.02s
+  ✓ invalid dropdown values cannot change barber data                    0.02s
+  ✓ barbers and guests cannot use the admin dropdown endpoint            0.02s
+  ✓ old two field status requests remain compatible                      0.02s
+  ✓ conflicting dropdown and old fields are rejected                     0.01s
+  ✓ available choice does not override an actual busy queue              0.02s
+
+   PASS  Tests\Feature\CashTenderTest
+  ✓ cash received and change are saved without inflating sales           0.04s
+  ✓ cash is required for cash payment                                    0.02s
+  ✓ insufficient cash rejects sale payment and stock deduction           0.02s
+  ✓ change uses the total for all service units                          0.02s
+  ✓ exact cash records zero change                                       0.02s
+  ✓ cent calculation is exact                                            0.02s
+  ✓ invalid cash formats and amounts are rejected                        0.04s
+  ✓ gcash does not require or store cash received                        0.03s
+  ✓ gcash ignores stale cash input when switching payment method         0.03s
+  ✓ submitted change is rejected rather than trusted                     0.02s
+  ✓ duplicate checkout preserves original tender and change              0.04s
+  ✓ barber cannot enter cash or modify saved tender                      0.04s
+  ✓ direct workflow call cannot bypass insufficient cash validation      0.02s
+  ✓ queued cash records tender without deducting stock                   0.02s
+  ✓ old cash records without tender still render                         0.03s
+  ✓ saved cash and change cannot be rewritten through history or queue   0.04s
+
+   PASS  Tests\Feature\DatabaseSeederTest
+  ✓ default services are seeded                                          0.04s
+  ✓ seeders never overwrite existing prices or create default login      0.01s
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application returns a successful response                        0.02s
+  ✓ login page has password visibility toggle                            0.01s
+  ✓ barber dashboard loads without sql groupby error                     0.02s
+  ✓ barber dashboard shows service menu                                  0.02s
+
+   PASS  Tests\Feature\InventoryDisplayPrecisionTest
+  ✓ stock and threshold display whole numbers in inventory list and det… 0.02s
+  ✓ formatting does not change stored stock threshold or low stock logi… 0.02s
+  ✓ zero and low stock keep correct status with whole number display     0.02s
+
+   PASS  Tests\Feature\ShopEmailDomainTest
+  ✓ exact shop domain is required without suffix or subdomain bypasses   0.02s
+  ✓ admin can create shop barber but external email is rejected          0.03s
+  ✓ owner cli rejects external admin email                               0.01s
+  ✓ both roles must use shop domain when changing email                  0.02s
+  ✓ legacy users can still login and change password without changing e… 0.03s
+  ✓ barber cannot create accounts and customer emails are unrestricted   0.02s
+
+   PASS  Tests\Feature\ShopManagementTest
+  ✓ public admin registration is removed                                 0.03s
+  ✓ owner cli provisions admin without public registration               0.02s
+  ✓ admin and barber login logout                                        0.05s
+  ✓ invalid login is rejected                                            0.22s
+  ✓ account password email change for both roles                         0.02s
+  ✓ barber can change password without current password                  0.02s
+  ✓ admin can change password without current password                   0.03s
+  ✓ admin new password still requires confirmation and minimum length    0.02s
+  ✓ admin can save account details without changing password             0.01s
+  ✓ admin can create barber but not web admin                            0.02s
+  ✓ admin pages render without php errors                                0.12s
+  ✓ barber cannot access admin modules or write finances                 0.07s
+  ✓ unknown customer role cannot access shop features                    0.03s
+  ✓ cash checkout deducts stock and preserves split                      0.03s
+  ✓ no inventory deduction for queued transaction and idempotent comple… 0.02s
+  ✓ gcash requires valid unique reference and manual verification        0.05s
+  ✓ out of stock inactive services products are hidden and blocked       0.04s
+  ✓ cart quantity stock check and tampered amounts                       0.04s
+  ✓ completion stock shortage rolls back every product                   0.02s
+  ✓ price and requirements snapshots do not change after service edit    0.02s
+  ✓ available barbers use status availability and open queue             0.03s
+  ✓ barber can only advance own queue not financial completion           0.04s
+  ✓ completed history customer correction preserves date stock and audi… 0.04s
+  ✓ inventory crud restock and monitoring                                0.04s
+  ✓ service crud requirements and deactivation                           0.03s
+  ✓ server side search and filters                                       0.05s
+  ✓ dashboard and reports exclude invalid transactions and use actual c… 0.04s
+  ✓ barber earnings are own completed verified records only              0.04s
+  ✓ attendance clock in out and barber history protection                0.03s
+  ✓ admin attendance validation and correction                           0.03s
+  ✓ cancellation never deducts stock and cannot reopen                   0.02s
+  ✓ product threshold boundary and zero stock classification             0.01s
+  ✓ exact stock can complete without going negative                      0.02s
+  ✓ restocks preserve whole number transaction snapshots                 0.02s
+  ✓ repeated checkout token is idempotent even after completion          0.02s
+  ✓ removed checkout token cannot recreate a sale                        0.02s
+  ✓ gcash reference database key prevents duplicate payments             0.02s
+  ✓ fractional service consumption is rejected server side               0.01s
+  ✓ customer crud search and safe transaction retention                  0.03s
+  ✓ barber status and admin password reset                               0.02s
+  ✓ cash completion is rejected if payment is flagged                    0.02s
+  ✓ attendance rejects clock out before clock in and tampered history    0.02s
+  ✓ service product negative quantity and duplicate requirements are re… 0.02s
+  ✓ admin can correct uncompleted gcash reference and must reverify      0.03s
+  ✓ csv report streams valid sales and sanitizes formula names           0.02s
+  ✓ pos has no manual transaction date control                           0.02s
+  ✓ cash transaction date is server save time with seconds               0.02s
+  ✓ browser supplied date is ignored for new transactions                0.02s
+  ✓ workflow uses server time even if called with a client date          0.01s
+  ✓ checkout retry preserves original save time                          0.02s
+  ✓ gcash save time is not replaced by later completion time             0.03s
+  ✓ barber new password still requires confirmation and minimum length   0.02s
+  ✓ barber can save account details without changing password            0.02s
+  ✓ barber profile password change only affects authenticated account    0.02s
+  ✓ legacy current password submission is ignored for barber             0.02s
+  ✓ guest cannot change barber password                                  0.01s
+  ✓ barber can log in with new password after changing without old pass… 0.23s
+
+  Tests:    136 passed (932 assertions)
+  Duration: 4.40s

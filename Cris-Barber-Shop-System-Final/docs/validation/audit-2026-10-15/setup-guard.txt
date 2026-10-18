@@ -1,0 +1,3 @@
+> @php scripts/guard-fresh-install.php
+Setup refused: existing environment/database detected. Preserve APP_KEY and data; follow the explicit README update steps.
+Script @php scripts/guard-fresh-install.php handling the setup event returned with error code 1

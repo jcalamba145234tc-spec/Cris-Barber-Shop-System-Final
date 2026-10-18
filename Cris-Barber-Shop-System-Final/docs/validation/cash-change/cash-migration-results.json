@@ -1,0 +1,6 @@
+{
+  "original_database_unchanged": true,
+  "upgrade_rollback_reupgrade_preserved_all_existing_records": true,
+  "legacy_cash_received_and_change_left_null": true,
+  "foreign_key_violations": 0
+}

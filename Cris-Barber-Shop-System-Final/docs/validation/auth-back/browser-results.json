@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "admin: Back immediately after login stays on dashboard",
+    "admin: login URL returns to current profile page",
+    "admin: normal Back between protected pages still works",
+    "admin: Back after logout remains on sign-in",
+    "barber: Back immediately after login stays on dashboard",
+    "barber: login URL returns to current profile page",
+    "barber: normal Back between protected pages still works",
+    "barber: Back after logout remains on sign-in"
+  ],
+  "issues": []
+}
