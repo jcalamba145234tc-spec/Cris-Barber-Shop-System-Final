@@ -26,10 +26,14 @@ class CheckoutRequest extends FormRequest
 
         return [
             'checkout_token' => ['required', 'uuid'],
-            'service_id' => ['required', 'exists:services,id'],
+            'service_id' => ['required_without:service_ids', 'exclude_with:service_ids', 'exists:services,id'],
+            'service_ids' => ['required_without:service_id', 'array', 'min:1', 'max:50'],
+            'service_ids.*' => ['required', 'uuid', 'distinct', 'exists:services,id'],
             'barber_id' => ['required', 'exists:barbers,id'],
             'customer_id' => ['nullable', Rule::exists('customers', 'id')->whereNull('deleted_at')],
-            'quantity' => ['required', 'integer', 'min:1', 'max:100'],
+            'quantity' => ['required_without:service_quantities', 'integer', 'min:1', 'max:100'],
+            'service_quantities' => ['required_without:quantity', 'array', 'min:1', 'max:50'],
+            'service_quantities.*' => ['required', 'integer', 'min:1', 'max:100'],
             'payment_method' => ['required', 'in:cash,gcash'],
             'cash_received' => ['exclude_unless:payment_method,cash', 'required', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99', 'regex:/^\d{1,10}(?:\.\d{1,2})?$/'],
             'change_amount' => ['prohibited'],

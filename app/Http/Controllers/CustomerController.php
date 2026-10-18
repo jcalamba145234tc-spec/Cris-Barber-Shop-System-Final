@@ -31,7 +31,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        return view('customers.show', ['customer' => $customer, 'transactions' => $customer->transactions()->with('payment')->latest('transaction_date')->paginate(20)]);
+        return view('customers.show', ['customer' => $customer, 'transactions' => $customer->transactions()->with(['payment', 'services'])->latest('transaction_date')->paginate(20)]);
     }
 
     public function store(Request $request)

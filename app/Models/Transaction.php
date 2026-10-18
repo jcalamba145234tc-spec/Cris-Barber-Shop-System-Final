@@ -27,6 +27,12 @@ class Transaction extends Model
         return $this->belongsTo(Service::class);
     }
 
+    public function services()
+    {
+        return $this->belongsToMany(Service::class, 'transaction_services')
+            ->withPivot(['service_name', 'unit_price', 'quantity']);
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class)->withTrashed();

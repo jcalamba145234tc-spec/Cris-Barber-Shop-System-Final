@@ -3,6 +3,54 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 Alpine.start();
 
+const shopNavigation = document.getElementById('shop-navigation');
+const navigationOpenButton = document.querySelector('[data-nav-open]');
+const navigationCloseButtons = document.querySelectorAll('[data-nav-close]');
+const sidebarCollapseButton = document.querySelector('[data-sidebar-collapse]');
+const sidebarRestoreButton = document.querySelector('[data-sidebar-restore]');
+
+const setNavigationOpen = (isOpen) => {
+    if (!shopNavigation || !navigationOpenButton) {
+        return;
+    }
+
+    shopNavigation.classList.toggle('is-open', isOpen);
+    if (isOpen) {
+        shopNavigation.classList.remove('is-collapsed');
+        document.body.classList.remove('sidebar-collapsed');
+    }
+    navigationOpenButton.setAttribute('aria-expanded', String(isOpen));
+    document.querySelectorAll('.nav-backdrop').forEach((backdrop) => {
+        backdrop.hidden = !isOpen;
+    });
+    document.body.classList.toggle('navigation-open', isOpen);
+};
+
+const setSidebarCollapsed = (isCollapsed) => {
+    if (!shopNavigation || !sidebarRestoreButton) {
+        return;
+    }
+
+    shopNavigation.classList.toggle('is-collapsed', isCollapsed);
+    document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    sidebarRestoreButton.setAttribute('aria-expanded', String(!isCollapsed));
+};
+
+navigationOpenButton?.addEventListener('click', () => setNavigationOpen(true));
+sidebarCollapseButton?.addEventListener('click', () => setSidebarCollapsed(true));
+sidebarRestoreButton?.addEventListener('click', () => setSidebarCollapsed(false));
+navigationCloseButtons.forEach((button) => {
+    button.addEventListener('click', () => setNavigationOpen(false));
+});
+shopNavigation?.querySelectorAll('.nav-links a').forEach((link) => {
+    link.addEventListener('click', () => setNavigationOpen(false));
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        setNavigationOpen(false);
+    }
+});
+
 document.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
     toggle.addEventListener('click', () => {
         const input = document.getElementById(toggle.dataset.passwordToggle);
@@ -75,8 +123,13 @@ document.querySelectorAll('[data-pos-form]').forEach((form) => {
     const changeCard = form.querySelector('[data-cash-change-card]');
     const change = form.querySelector('[data-cash-change]');
     const cashError = form.querySelector('[data-cash-error]');
-    const service = form.querySelector('[data-pos-service]');
-    const quantity = form.querySelector('[data-pos-quantity]');
+    const services = [...form.querySelectorAll('[data-pos-service]')];
+    const serviceQuantities = [...form.querySelectorAll('[data-pos-service-quantity]')];
+    const serviceList = form.querySelector('.service-choice-list');
+    const servicePickerTrigger = form.querySelector('[data-service-picker-trigger]');
+    const servicePickerActions = form.querySelector('[data-service-picker-actions]');
+    const servicePickerDone = form.querySelector('[data-service-picker-done]');
+    const serviceSummary = form.querySelector('[data-service-selection-summary]');
     const total = form.querySelector('[data-pos-total]');
     const money = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
     const toCents = (value) => {
@@ -84,10 +137,68 @@ document.querySelectorAll('[data-pos-form]').forEach((form) => {
         const [whole, fraction = ''] = value.split('.');
         return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
     };
+    const renderServiceSummary = () => {
+        const items = services
+            .filter((service) => service.checked)
+            .map((service) => {
+                const item = document.createElement('div');
+                item.className = 'service-selection-item';
+                const description = document.createElement('span');
+                description.className = 'service-selection-description';
+                description.textContent = `${service.nextElementSibling.textContent} - ${money.format((toCents(service.dataset.price || '0') ?? 0) / 100)}`;
+                const sourceQuantity = service.closest('.service-choice').querySelector('[data-pos-service-quantity]');
+                const quantityControl = document.createElement('div');
+                quantityControl.className = 'service-selection-quantity-control';
+                const count = document.createElement('input');
+                count.type = 'number';
+                count.min = '1';
+                count.max = '100';
+                count.step = '1';
+                count.inputMode = 'numeric';
+                count.className = 'service-selection-quantity';
+                count.setAttribute('aria-label', `Quantity for ${service.nextElementSibling.textContent}`);
+                count.dataset.serviceId = service.value;
+                count.name = `service_quantities[${service.value}]`;
+                count.required = true;
+                count.disabled = true;
+                count.value = sourceQuantity.value;
+                count.addEventListener('input', () => {
+                    sourceQuantity.value = count.value;
+                    updateTotal();
+                });
+                const arrows = document.createElement('span');
+                arrows.className = 'service-selection-quantity-arrows';
+                [['Increase quantity', 1, '▲'], ['Decrease quantity', -1, '▼']].forEach(([label, step, arrow]) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.textContent = arrow;
+                    button.setAttribute('aria-label', `${label} for ${service.nextElementSibling.textContent}`);
+                    button.addEventListener('click', () => {
+                        const current = Number(count.value);
+                        count.value = String(Math.max(1, Math.min(100, (Number.isInteger(current) ? current : 1) + step)));
+                        count.dispatchEvent(new Event('input', { bubbles: true }));
+                    });
+                    arrows.append(button);
+                });
+                quantityControl.append(count, arrows);
+                item.append(description, quantityControl);
+                return item;
+            });
+        serviceSummary.replaceChildren(...items);
+    };
     const updateTotal = () => {
-        const priceCents = toCents(service.selectedOptions[0]?.dataset.price || '0') ?? 0;
-        const units = Number(quantity.value);
-        const totalCents = priceCents * (Number.isInteger(units) && units > 0 ? units : 0);
+        const priceCents = services.reduce((sum, service) => {
+            if (!service.checked) return sum;
+            const quantity = Number(service.closest('.service-choice').querySelector('[data-pos-service-quantity]').value);
+            return sum + (toCents(service.dataset.price || '0') ?? 0) * (Number.isInteger(quantity) && quantity > 0 ? quantity : 0);
+        }, 0);
+        const totalCents = priceCents;
+        if (services.length) {
+            const hasSelection = services.some((service) => service.checked);
+            const pickerOpen = servicePickerTrigger.getAttribute('aria-expanded') === 'true';
+            services[0].required = !hasSelection && pickerOpen;
+            services[0].setCustomValidity(hasSelection || !pickerOpen ? '' : 'Choose at least one service.');
+        }
         total.textContent = money.format(totalCents / 100);
         cash.setCustomValidity('');
         cashError.hidden = true;
@@ -114,9 +225,51 @@ document.querySelectorAll('[data-pos-form]').forEach((form) => {
         cash.required = !gcash;
         updateTotal();
     };
+    const setServicePickerExpanded = (expanded) => {
+        const hasSelection = services.some((service) => service.checked);
+        if (!expanded) renderServiceSummary();
+        serviceList.hidden = !expanded;
+        servicePickerActions.hidden = !expanded;
+        serviceSummary.hidden = expanded || !hasSelection;
+        services.forEach((service) => {
+            const sourceQuantity = service.closest('.service-choice').querySelector('[data-pos-service-quantity]');
+            const summaryQuantity = serviceSummary.querySelector(`[data-service-id="${service.value}"]`);
+            if (summaryQuantity) summaryQuantity.disabled = expanded;
+            sourceQuantity.disabled = !expanded || !service.checked;
+        });
+        servicePickerTrigger.setAttribute('aria-expanded', String(expanded));
+        servicePickerTrigger.textContent = 'Select Services';
+    };
+    setServicePickerExpanded(false);
+    servicePickerTrigger.addEventListener('click', () => {
+        setServicePickerExpanded(servicePickerTrigger.getAttribute('aria-expanded') !== 'true');
+    });
+    servicePickerDone.addEventListener('click', () => {
+        if (!services.some((service) => service.checked)) {
+            setServicePickerExpanded(true);
+            services[0]?.reportValidity();
+            return;
+        }
+        setServicePickerExpanded(false);
+    });
+    form.addEventListener('submit', (event) => {
+        if (services.some((service) => service.checked)) return;
+        event.preventDefault();
+        setServicePickerExpanded(true);
+        services[0]?.reportValidity();
+    });
     payment.addEventListener('change', updatePayment);
-    service.addEventListener('change', updateTotal);
-    quantity.addEventListener('input', updateTotal);
+    services.forEach((service) => service.addEventListener('change', () => {
+        const quantity = service.closest('.service-choice').querySelector('[data-pos-service-quantity]');
+        quantity.disabled = !service.checked;
+        if (service.checked && quantity.value === '') quantity.value = '1';
+        updateTotal();
+        if (servicePickerTrigger.getAttribute('aria-expanded') === 'false' && services.some((item) => item.checked)) renderServiceSummary();
+    }));
+    serviceQuantities.forEach((quantity) => quantity.addEventListener('input', () => {
+        updateTotal();
+        if (servicePickerTrigger.getAttribute('aria-expanded') === 'false') renderServiceSummary();
+    }));
     cash.addEventListener('input', updateTotal);
     updatePayment();
 });

@@ -20,9 +20,29 @@ class TransactionWorkflow
     public function create(array $data, User $actor): Transaction
     {
         abort_unless($actor->role === 'admin', 403);
-        Validator::make($data, ['quantity' => ['required', 'integer', 'min:1', 'max:100']])->validate();
+        Validator::make($data, [
+            'quantity' => ['required_without:service_quantities', 'integer', 'min:1', 'max:100'],
+            'service_quantities' => ['required_without:quantity', 'array', 'min:1', 'max:50'],
+            'service_quantities.*' => ['required', 'integer', 'min:1', 'max:100'],
+            'service_id' => ['required_without:service_ids', 'exists:services,id'],
+            'service_ids' => ['required_without:service_id', 'array', 'min:1', 'max:50'],
+            'service_ids.*' => ['required', 'uuid', 'distinct', 'exists:services,id'],
+        ])->validate();
+        $serviceIds = array_values($data['service_ids'] ?? [$data['service_id']]);
+        $quantities = $data['service_quantities'] ?? array_fill_keys($serviceIds, (int) $data['quantity']);
+        if (array_diff($serviceIds, array_keys($quantities)) || array_diff(array_keys($quantities), $serviceIds)) {
+            throw ValidationException::withMessages(['service_quantities' => 'Provide a quantity for every selected service.']);
+        }
+        foreach ($quantities as $quantity) {
+            if (! is_numeric($quantity) || (int) $quantity < 1 || (int) $quantity > 100 || (string) (int) $quantity !== (string) $quantity) {
+                throw ValidationException::withMessages(['service_quantities' => 'Each service quantity must be a whole number from 1 to 100.']);
+            }
+        }
+        $data['service_quantities'] = array_map('intval', $quantities);
+        ksort($data['service_quantities']);
 
         return DB::transaction(function () use ($data, $actor) {
+            $serviceIds = array_values($data['service_ids'] ?? [$data['service_id']]);
             $existing = Transaction::withTrashed()->where('checkout_token', $data['checkout_token'])->first();
             if ($existing) {
                 if ($existing->trashed()) {
@@ -44,24 +64,37 @@ class TransactionWorkflow
             if (! Barber::available()->whereKey($barber->id)->exists()) {
                 throw ValidationException::withMessages(['barber_id' => 'This barber is not currently available.']);
             }
-            $service = Service::whereKey($data['service_id'])->lockForUpdate()->firstOrFail();
-            if (! $service->active) {
-                throw ValidationException::withMessages(['service_id' => 'This service is inactive.']);
+            $services = Service::whereIn('id', $serviceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            if ($services->count() !== count($serviceIds)) {
+                throw ValidationException::withMessages(['service_ids' => 'One or more selected services are unavailable.']);
             }
-            $quantity = (int) $data['quantity'];
-            $requirements = DB::table('service_products')->where('service_id', $service->id)->orderBy('product_id')->get();
-            foreach ($requirements as $requirement) {
-                $product = Product::whereKey($requirement->product_id)->lockForUpdate()->firstOrFail();
-                $needed = WholeQuantity::require($requirement->quantity, 'service_id') * $quantity;
+            foreach ($services as $service) {
+                if (! $service->active) {
+                    throw ValidationException::withMessages(['service_ids' => "The service {$service->name} is inactive."]);
+                }
+            }
+            $requirements = [];
+            foreach ($services as $service) {
+                $quantity = $data['service_quantities'][$service->id];
+                foreach (DB::table('service_products')->where('service_id', $service->id)->orderBy('product_id')->get() as $requirement) {
+                    $needed = WholeQuantity::require($requirement->quantity, 'service_ids') * $quantity;
+                    $requirements[$requirement->product_id] = ($requirements[$requirement->product_id] ?? 0) + $needed;
+                }
+            }
+            ksort($requirements);
+            foreach ($requirements as $productId => $needed) {
+                $product = Product::whereKey($productId)->lockForUpdate()->firstOrFail();
                 $stock = WholeQuantity::require($product->stock, 'service_id');
                 if ($needed < 1 || $needed > 999999999) {
-                    throw ValidationException::withMessages(['service_id' => 'Invalid whole-number service consumption. Owner review required.']);
+                    throw ValidationException::withMessages(['service_ids' => 'Invalid whole-number service consumption. Owner review required.']);
                 }
                 if (! $product->active || $stock < $needed) {
-                    throw ValidationException::withMessages(['service_id' => "Insufficient available stock: {$product->name}. Reduce quantity or restock."]);
+                    throw ValidationException::withMessages(['service_ids' => "Insufficient available stock: {$product->name}. Reduce quantity or restock."]);
                 }
             }
-            $cents = Money::cents((string) $service->price) * $quantity;
+            $unitPriceCents = $services->sum(fn ($service) => Money::cents((string) $service->price));
+            $cents = $services->sum(fn ($service) => Money::cents((string) $service->price) * $data['service_quantities'][$service->id]);
+            $totalQuantity = array_sum($data['service_quantities']);
             if ($cents > 9999999999) {
                 throw ValidationException::withMessages(['quantity' => 'The transaction total exceeds the monetary storage limit.']);
             }
@@ -81,11 +114,11 @@ class TransactionWorkflow
             $transaction = Transaction::create([
                 'checkout_token' => $data['checkout_token'],
                 'barber_id' => $barber->id,
-                'service_id' => $service->id,
-                'service_name' => $service->name,
+                'service_id' => $serviceIds[0],
+                'service_name' => $services[$serviceIds[0]]->name,
                 'customer_id' => $data['customer_id'] ?? null,
-                'quantity' => $quantity,
-                'unit_price' => $service->price,
+                'quantity' => $totalQuantity,
+                'unit_price' => Money::decimal($unitPriceCents),
                 'total_amount' => Money::decimal($cents),
                 'barber_share' => Money::decimal($barberCents),
                 'shop_share' => Money::decimal($cents - $barberCents),
@@ -93,8 +126,15 @@ class TransactionWorkflow
                 'status' => 'queued',
                 'inventory_managed' => true,
             ]);
-            foreach ($requirements as $requirement) {
-                $transaction->products()->attach($requirement->product_id, ['quantity' => WholeQuantity::require($requirement->quantity, 'service_id') * $quantity]);
+            foreach ($services as $service) {
+                $transaction->services()->attach($service->id, [
+                    'service_name' => $service->name,
+                    'unit_price' => $service->price,
+                    'quantity' => $data['service_quantities'][$service->id],
+                ]);
+            }
+            foreach ($requirements as $productId => $needed) {
+                $transaction->products()->attach($productId, ['quantity' => $needed]);
             }
             Payment::create([
                 'transaction_id' => $transaction->id,
@@ -184,9 +224,17 @@ class TransactionWorkflow
     private function sameCheckout(Transaction $existing, array $data): Transaction
     {
         $payment = $existing->payment;
+        $serviceIds = array_values($data['service_ids'] ?? [$data['service_id']]);
+        $existingQuantities = $existing->services()->pluck('transaction_services.quantity', 'services.id')->all();
+        if ($existingQuantities === []) {
+            $existingQuantities = [$existing->service_id => (int) $existing->quantity];
+        } else {
+            $existingQuantities = array_map('intval', $existingQuantities);
+        }
+        ksort($existingQuantities);
+        $requestedQuantities = $data['service_quantities'];
         $matches = $existing->barber_id === $data['barber_id']
-            && $existing->service_id === $data['service_id']
-            && (int) $existing->quantity === (int) $data['quantity']
+            && $existingQuantities === $requestedQuantities
             && (string) $existing->customer_id === (string) ($data['customer_id'] ?? '')
             && $payment?->payment_method === $data['payment_method'];
         if ($data['payment_method'] === 'gcash') {

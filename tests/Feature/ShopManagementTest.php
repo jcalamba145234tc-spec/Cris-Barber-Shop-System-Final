@@ -196,6 +196,49 @@ class ShopManagementTest extends TestCase
         $this->assertDatabaseHas('inventory_movements', ['transaction_id' => $transaction->id, 'quantity' => -4]);
     }
 
+    public function test_checkout_can_combine_multiple_services_and_inventory_requirements(): void
+    {
+        $beardTrim = Service::create(['name' => 'Beard Trim', 'price' => 70, 'duration_minutes' => 15, 'active' => true]);
+        $beardTrim->products()->attach($this->product->id, ['quantity' => 1]);
+
+        $checkout = $this->checkout([
+            'service_ids' => [$this->service->id, $beardTrim->id],
+            'service_quantities' => [$this->service->id => 2, $beardTrim->id => 1],
+            'cash_received' => '500.00',
+        ]);
+        $this->actingAs($this->admin)->post('/transactions', $checkout)->assertSessionHasNoErrors()->assertRedirect();
+
+        $transaction = Transaction::firstOrFail();
+        $this->assertEquals(370, $transaction->total_amount);
+        $this->assertEquals(220, $transaction->unit_price);
+        $this->assertEquals(185, $transaction->barber_share);
+        $this->assertSame(3, $transaction->quantity);
+        $this->assertSame(2, $transaction->services()->count());
+        $this->assertEquals(5, $this->product->fresh()->stock);
+        $this->assertEquals(370, $transaction->payment->amount);
+        $this->assertEquals(130, $transaction->payment->change_amount);
+        $this->assertDatabaseHas('transaction_products', [
+            'transaction_id' => $transaction->id,
+            'product_id' => $this->product->id,
+            'quantity' => 5,
+        ]);
+        $this->assertDatabaseHas('transaction_services', [
+            'transaction_id' => $transaction->id,
+            'service_id' => $this->service->id,
+            'quantity' => 2,
+        ]);
+        $this->assertDatabaseHas('transaction_services', [
+            'transaction_id' => $transaction->id,
+            'service_id' => $beardTrim->id,
+            'quantity' => 1,
+        ]);
+        $this->get('/transactions/'.$transaction->id)->assertOk()->assertSee('Haircut')->assertSee('Beard Trim');
+        $this->get('/transactions?service_id='.$beardTrim->id)->assertOk()->assertSee($transaction->id);
+        $this->post('/transactions', $checkout)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame(1, Transaction::count());
+        $this->assertEquals(5, $this->product->fresh()->stock);
+    }
+
     public function test_no_inventory_deduction_for_queued_transaction_and_idempotent_completion(): void
     {
         $transaction = $this->queued();
@@ -228,18 +271,18 @@ class ShopManagementTest extends TestCase
     {
         $this->product->update(['stock' => 1]);
         $this->actingAs($this->admin)->get('/pos')->assertOk()->assertDontSee('Haircut');
-        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_id');
+        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_ids');
         $this->product->update(['stock' => 10, 'active' => false]);
         $this->get('/pos')->assertDontSee('Haircut');
-        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_id');
+        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_ids');
         $this->product->update(['active' => true]);
         $this->service->update(['active' => false]);
-        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_id');
+        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_ids');
     }
 
     public function test_cart_quantity_stock_check_and_tampered_amounts(): void
     {
-        $this->actingAs($this->admin)->post('/transactions', $this->checkout(['quantity' => 6]))->assertSessionHasErrors('service_id');
+        $this->actingAs($this->admin)->post('/transactions', $this->checkout(['quantity' => 6]))->assertSessionHasErrors('service_ids');
         foreach (['total_amount', 'barber_share', 'shop_share', 'unit_price', 'amount'] as $field) {
             $this->post('/transactions', $this->checkout([$field => 1]))->assertSessionHasErrors($field);
         }
@@ -453,7 +496,7 @@ class ShopManagementTest extends TestCase
         $this->product->update(['stock' => 2]);
         $this->actingAs($this->admin)->post('/transactions', $this->checkout())->assertSessionHasNoErrors();
         $this->assertEquals(0, $this->product->fresh()->stock);
-        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_id');
+        $this->post('/transactions', $this->checkout())->assertSessionHasErrors('service_ids');
     }
 
     public function test_restocks_preserve_whole_number_transaction_snapshots(): void

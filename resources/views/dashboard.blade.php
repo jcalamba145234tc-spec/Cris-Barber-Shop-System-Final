@@ -1,11 +1,11 @@
 @extends('layouts.shop', ['heading' => ucfirst($user->role).' dashboard'])
 @section('module')
 @if($user->role === 'admin')
-<div class="stats grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+<div class="stats admin-dashboard-stats grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
     <article class="stat"><span>Total Customers</span><strong>{{ $totalCustomers }}</strong></article>
     <article class="stat"><span>Total Barbers</span><strong>{{ $totalBarbers }}</strong></article>
     <article class="stat"><span>Total Services</span><strong>{{ $totalServices }}</strong><p class="muted">Active and inactive catalogue records.</p></article>
-    <article class="stat"><span>Payment Transactions</span><strong>{{ $totalPayments }}</strong><p class="muted">All payment statuses linked to non-deleted transactions.</p></article>
+    <article class="stat stat-payment-transactions"><span>Payment Transactions</span><strong>{{ $totalPayments }}</strong><p class="muted">Payment statuses for active transactions.</p></article>
     <article class="stat"><span>Available Barbers</span><strong>{{ $availableBarbers }}</strong></article>
     <article class="stat"><span>Total Sales / Revenue</span><strong>₱{{ number_format($totalRevenue, 2) }}</strong></article>
     <article class="stat"><span>Low Stock Items</span><strong>{{ $lowStock }}</strong><p class="muted">Active products, including out-of-stock.</p></article>
@@ -18,7 +18,7 @@
         <article class="stat"><span>Selected month sales</span><strong>₱{{ number_format($monthRevenue,2) }}</strong></article>
         <article class="stat"><span>Shop share this month</span><strong>₱{{ number_format($monthShopShare,2) }}</strong></article>
     </div>
-    <form class="export-panel" method="GET" action="{{ route('reports.pdf') }}" target="_blank"
+    <form class="export-panel" method="GET" action="{{ route('reports.pdf') }}"
           x-data="{ range: 'last_month', thisMonth: '{{ now()->format('Y-m') }}', lastMonth: '{{ now()->startOfMonth()->subMonth()->format('Y-m') }}', month: '{{ now()->startOfMonth()->subMonth()->format('Y-m') }}', date: '{{ $selectedDate }}',
             get period() { return this.range === 'date' ? 'date' : 'month'; },
             get chosenMonth() { return this.range === 'this_month' ? this.thisMonth : (this.range === 'last_month' ? this.lastMonth : this.month); },

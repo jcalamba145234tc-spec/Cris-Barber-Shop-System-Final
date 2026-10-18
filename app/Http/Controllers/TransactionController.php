@@ -28,13 +28,18 @@ class TransactionController extends Controller
             'payment_method' => ['nullable', 'in:cash,gcash'],
             'status' => ['nullable', 'in:queued,in_progress,ready,completed,cancelled'],
         ]);
-        $query = Transaction::with(['barber.user', 'customer', 'payment']);
+        $query = Transaction::with(['barber.user', 'customer', 'payment', 'services']);
         if ($request->user()->role === 'barber') {
             $query->where('barber_id', $this->ownBarber($request)->id);
         }
         foreach (['barber_id', 'service_id', 'status'] as $filter) {
             if (! empty($filters[$filter])) {
-                $query->where($filter, $filters[$filter]);
+                if ($filter === 'service_id') {
+                    $query->where(fn ($services) => $services->where($filter, $filters[$filter])
+                        ->orWhereHas('services', fn ($service) => $service->where('services.id', $filters[$filter])));
+                } else {
+                    $query->where($filter, $filters[$filter]);
+                }
             }
         }
         if (! empty($filters['payment_method'])) {
@@ -49,6 +54,7 @@ class TransactionController extends Controller
         if (! empty($filters['q'])) {
             $term = '%'.$filters['q'].'%';
             $query->where(fn ($q) => $q->where('id', 'like', $term)->orWhere('service_name', 'like', $term)
+                ->orWhereHas('services', fn ($service) => $service->where('transaction_services.service_name', 'like', $term))
                 ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', $term))
                 ->orWhereHas('payment', fn ($p) => $p->where('gcash_reference_no', 'like', $term)));
         }
@@ -88,7 +94,7 @@ class TransactionController extends Controller
     {
         $this->authorizeRecord($request, $transaction);
 
-        return view('transactions.show', ['transaction' => $transaction->load(['barber.user', 'payment', 'customer', 'products'])]);
+        return view('transactions.show', ['transaction' => $transaction->load(['barber.user', 'payment', 'customer', 'products', 'services'])]);
     }
 
     public function edit(Transaction $transaction)

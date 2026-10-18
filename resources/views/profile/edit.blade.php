@@ -52,8 +52,7 @@
             @error('email') <p class="error">{{ $message }}</p> @enderror
 
             <h2 class="profile-section-title">Change password</h2>
-            <p class="muted profile-password-note">Leave these fields blank to keep your current password.</p>
-
+           
             <label for="password">New password</label>
             <input id="password" type="password" name="password" autocomplete="new-password">
             @error('password') <p class="error">{{ $message }}</p> @enderror

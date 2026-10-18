@@ -4,10 +4,7 @@
 .env.backup
 .env.production
 .phpactor.json
-# Generated Laravel cache files
-/.phpunit.result.cache
-/bootstrap/cache/*.php
-/storage/framework/views/*.php
+.phpunit.result.cache
 /.codex
 /.cursor/
 /.idea
@@ -28,3 +25,5 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/bootstrap/cache/*.php
+/storage/framework/views/*.php
