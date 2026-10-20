@@ -19,7 +19,7 @@ class DashboardController extends Controller
         $filters = $request->validate(['date' => ['nullable', 'date_format:Y-m-d'], 'month' => ['nullable', 'date_format:Y-m']]);
         $selectedDate = $filters['date'] ?? today()->format('Y-m-d');
         $selectedMonth = $filters['month'] ?? now()->format('Y-m');
-        $month = Carbon::parse($selectedMonth.'-01');
+        $month = Carbon::parse($selectedMonth . '-01');
         $data = ['selectedDate' => $selectedDate, 'selectedMonth' => $selectedMonth, 'user' => $request->user()];
         if ($request->user()->role === 'barber') {
             $barber = Barber::where('user_id', $request->user()->id)->firstOrFail();
@@ -47,9 +47,10 @@ class DashboardController extends Controller
         }
         abort_unless($request->user()->role === 'admin', 403);
         $valid = Transaction::valid();
+        $totalCustomers = Customer::count();
 
         return view('dashboard', $data + [
-            'totalCustomers' => Customer::count(),
+            'totalCustomers' => $totalCustomers,
             'totalBarbers' => Barber::count(),
             'totalServices' => Service::count(),
             'totalPayments' => Payment::whereHas('transaction')->count(),
