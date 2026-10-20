@@ -77,7 +77,6 @@ h1 { margin: 18px 0 7px; color: var(--ink); font-size: clamp(1.8rem, 4vw, 2.25re
 .profile-settings-card { width: min(100%, 560px); }
 .profile-section-title { margin: 25px 0 0; color: var(--ink); font-size: 1.05rem; }
 .profile-password-note { margin: 4px 0 0; font-size: .88rem; }
-.forgot-password-link { margin-top: 7px; text-align: right; }
 .reset-password-button { min-height: 34px; padding: 0 10px; border-color: #cce2d7; background: #f3faf6; color: #176b55; font-size: .78rem; white-space: nowrap; }
 .reset-password-button:hover { border-color: #a8d1bc; background: #e7f5ec; color: #105542; box-shadow: none; }
 .appearance-setting { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 20px 0; padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: color-mix(in srgb, var(--surface) 88%, var(--line)); }
@@ -109,6 +108,8 @@ tbody tr:hover td { background: #fafaf8; }
 td select { min-width: 125px; margin: 0; }
 td button { min-height: 35px; padding: 0 12px; border-color: #ead9d5; background: #fff8f6; color: #a13a2e; font-size: .82rem; }
 td button:hover { border-color: #e7c4bd; background: #fff0ed; color: #8e2e23; box-shadow: none; }
+.activate-product-button { border-color: #cce2d7; background: #f3faf6; color: #176b55; }
+.activate-product-button:hover { border-color: #a8d1bc; background: #e7f5ec; color: #105542; }
 @media (max-width: 640px) {
     .page { padding: 18px 14px; }
     .dashboard { padding: 18px 13px 36px; }
@@ -383,6 +384,25 @@ body.sidebar-collapsed .sidebar-restore { display: inline-flex; }
 :root.dark .nav-open:not(.profile-menu-item):not(.profile-menu-trigger):not(.dashboard-tab):hover { background: #29372f; color: #a4dfbd; }
 .module-page { padding-top: 24px; }
 .module-page > .panel { margin-bottom: 18px; }
+.customer-profile { padding: clamp(20px, 3vw, 32px); }
+.customer-profile-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; padding-bottom: 30px; border-bottom: 1px solid var(--line); }
+.customer-profile-heading .eyebrow { margin: 0 0 7px; color: var(--muted); font-size: .74rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.customer-profile-heading h2 { margin: 0; color: var(--ink); font-size: clamp(1.4rem, 2.4vw, 1.8rem); letter-spacing: -.035em; }
+.customer-contact { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.customer-contact > span { padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--surface) 85%, var(--line)); color: var(--ink); font-size: .9rem; }
+.customer-contact > .muted { color: var(--muted); }
+.customer-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 10px; padding-top: 20px; }
+.button-secondary { border-color: var(--line); background: var(--surface); color: var(--ink); }
+.button-secondary:hover { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--surface)); color: var(--brand); box-shadow: none; }
+.customer-transactions-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 30px 0 20px; }
+.customer-transactions-heading h3 { margin: 0; color: var(--ink); font-size: 1.08rem; }
+.customer-transactions-heading p { margin: 4px 0 0; font-size: .88rem; }
+.customer-empty-state { padding: 24px 12px; color: var(--muted); text-align: center; }
+@media (max-width: 640px) {
+    .customer-profile-heading { flex-direction: column; }
+    .customer-actions { width: 100%; }
+    .customer-actions .button { flex: 1; }
+}
 textarea { display: block; width: 100%; min-height: 100px; margin-top: 7px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
 .row-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .details-grid { display: grid; grid-template-columns: minmax(100px, 180px) 1fr; gap: 12px; }

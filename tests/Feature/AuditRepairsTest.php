@@ -12,13 +12,9 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\QuantityAudit;
 use App\Services\TransactionWorkflow;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -312,18 +308,6 @@ class AuditRepairsTest extends TestCase
         $this->get('/services/'.$this->service->id.'/edit')->assertSee('step="1"', false)->assertDontSee('step="0.001"', false);
         $this->post('/inventory/'.$this->product->id.'/restock', ['quantity' => 2, 'restock_token' => (string) Str::uuid()])->assertSessionHasNoErrors();
         $this->get('/inventory/'.$this->product->id)->assertSee('12 piece')->assertSee('₱25.50')->assertSee('<td>2</td><td>12</td>', false)->assertDontSee('12.00 piece');
-    }
-
-    public function test_password_reset_token_is_single_use_and_password_is_hashed(): void
-    {
-        Notification::fake();
-        $this->post('/forgot-password', ['email' => $this->admin->email])->assertSessionHasNoErrors();
-        Notification::assertSentTo($this->admin, ResetPassword::class);
-        $token = Password::createToken($this->admin);
-        $data = ['token' => $token, 'email' => $this->admin->email, 'password' => 'Reset-secure-password-123', 'password_confirmation' => 'Reset-secure-password-123'];
-        $this->post('/reset-password', $data)->assertRedirect('/login');
-        $this->assertTrue(Hash::check($data['password'], $this->admin->fresh()->password));
-        $this->post('/reset-password', $data)->assertSessionHasErrors('email');
     }
 
     public function test_report_filters_reject_invalid_dates_and_empty_reports_stream(): void

@@ -131,6 +131,21 @@ class InventoryController extends Controller
         return redirect()->route('inventory.index')->with('status', 'Product deactivated; stock and movement history retained.');
     }
 
+    public function updateStatus(Request $request, Product $product)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        $isActive = DB::transaction(function () use ($product) {
+            $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            $lockedProduct->update(['active' => ! $lockedProduct->active]);
+
+            return $lockedProduct->active;
+        });
+
+        return back()->with('status', $isActive
+            ? 'Product activated; it is available for services and restocking.'
+            : 'Product deactivated; stock and movement history retained.');
+    }
+
     private function validateProduct(Request $request, bool $creating): array
     {
         return $request->validate([

@@ -6,7 +6,6 @@ use App\Http\Controllers\BarberController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -18,10 +17,6 @@ Route::get('/', fn () => redirect()->route('dashboard'));
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
-    Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:3,1')->name('password.email');
-    Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.store');
 });
 Route::middleware(['auth', 'role:admin,barber'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -45,6 +40,7 @@ Route::middleware(['auth', 'role:admin,barber'])->group(function () {
         Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
         Route::resource('services', ServiceController::class);
         Route::resource('inventory', InventoryController::class)->parameters(['inventory' => 'product']);
+        Route::patch('/inventory/{product}/status', [InventoryController::class, 'updateStatus'])->name('inventory.status');
         Route::post('/inventory/{product}/restock', [InventoryController::class, 'restock'])->name('inventory.restock');
         Route::resource('customers', CustomerController::class);
         Route::get('/barbers/{barber}/edit', [BarberController::class, 'edit'])->name('barbers.edit');

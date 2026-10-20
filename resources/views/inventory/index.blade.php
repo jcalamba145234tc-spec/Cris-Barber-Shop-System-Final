@@ -1,13 +1,45 @@
 @extends('layouts.shop', ['heading' => 'Inventory'])
+
 @section('module')
-<section class="panel"><div class="panel-heading"><h2>Manual product stock</h2><a class="button" href="{{ route('inventory.create') }}">Add product</a></div>
-<form class="report-filters" method="GET">
-<div><label for="q">Product search</label><input id="q" name="q" value="{{ request('q') }}"></div>
-<div><label for="category">Category</label><select id="category" name="category"><option value="">All categories</option>@foreach($categories as $category)<option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>@endforeach</select></div>
-<div><label for="stock_status">Stock status</label><select id="stock_status" name="stock_status"><option value="">All stock</option>@foreach(['in'=>'In Stock','low'=>'Low Stock','out'=>'Out of Stock'] as $value=>$label)<option value="{{ $value }}" @selected(request('stock_status') === $value)>{{ $label }}</option>@endforeach</select></div>
-<div><label for="active">Product status</label><select id="active" name="active"><option value="">All statuses</option><option value="1" @selected(request('active') === '1')>Active</option><option value="0" @selected(request('active') === '0')>Inactive</option></select></div>
-<button>Filter</button><a href="{{ route('inventory.index') }}">Reset</a></form>
-<table><thead><tr><th>Product</th><th>Category</th><th>Stock / Unit</th><th>Threshold</th><th>Stock status</th><th>Product status</th><th>Actions</th></tr></thead><tbody>
-@forelse($products as $product)<tr><td>{{ $product->name }}</td><td>{{ $product->category ?? '—' }}</td><td>{{ \App\Support\WholeQuantity::display($product->stock) }} {{ $product->unit }}</td><td>{{ \App\Support\WholeQuantity::display($product->low_stock_threshold) }}</td><td><span @class(['stock-warning' => $product->stock <= $product->low_stock_threshold])>{{ $product->stock_status }}</span></td><td>{{ $product->active ? 'Active' : 'Inactive' }}</td><td><div class="row-actions"><a href="{{ route('inventory.show',$product) }}">View / Restock</a><a href="{{ route('inventory.edit',$product) }}">Edit</a><form method="POST" action="{{ route('inventory.destroy',$product) }}" data-confirm="Deactivate this product? Linked services will no longer be available.">@csrf @method('DELETE')<button>Deactivate</button></form></div></td></tr>@empty<tr><td colspan="7">No matching products.</td></tr>@endforelse
-</tbody></table>{{ $products->links() }}</section>
+<section class="panel">
+    <div class="panel-heading">
+        <h2>Manual product stock</h2>
+        <a class="button" href="{{ route('inventory.create') }}">Add product</a>
+    </div>
+    <form class="report-filters" method="GET">
+        <div><label for="q">Product search</label><input id="q" name="q" value="{{ request('q') }}"></div>
+        <div><label for="category">Category</label><select id="category" name="category"><option value="">All categories</option>@foreach($categories as $category)<option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>@endforeach</select></div>
+        <div><label for="stock_status">Stock status</label><select id="stock_status" name="stock_status"><option value="">All stock</option>@foreach(['in'=>'In Stock','low'=>'Low Stock','out'=>'Out of Stock'] as $value=>$label)<option value="{{ $value }}" @selected(request('stock_status') === $value)>{{ $label }}</option>@endforeach</select></div>
+        <div><label for="active">Product status</label><select id="active" name="active"><option value="">All statuses</option><option value="1" @selected(request('active') === '1')>Active</option><option value="0" @selected(request('active') === '0')>Inactive</option></select></div>
+        <button>Filter</button><a href="{{ route('inventory.index') }}">Reset</a>
+    </form>
+    <table>
+        <thead><tr><th>Product</th><th>Category</th><th>Stock / Unit</th><th>Threshold</th><th>Stock status</th><th>Product status</th><th>Actions</th></tr></thead>
+        <tbody>
+            @forelse($products as $product)
+                <tr>
+                    <td>{{ $product->name }}</td>
+                    <td>{{ $product->category ?? '—' }}</td>
+                    <td>{{ \App\Support\WholeQuantity::display($product->stock) }} {{ $product->unit }}</td>
+                    <td>{{ \App\Support\WholeQuantity::display($product->low_stock_threshold) }}</td>
+                    <td><span @class(['stock-warning' => $product->stock <= $product->low_stock_threshold])>{{ $product->stock_status }}</span></td>
+                    <td>{{ $product->active ? 'Active' : 'Inactive' }}</td>
+                    <td>
+                        <div class="row-actions">
+                            <a href="{{ route('inventory.show', $product) }}">View / Restock</a>
+                            <a href="{{ route('inventory.edit', $product) }}">Edit</a>
+                            <form method="POST" action="{{ route('inventory.status', $product) }}" data-confirm="{{ $product->active ? 'Deactivate this product? Linked services will no longer be available.' : 'Activate this product?' }}">
+                                @csrf @method('PATCH')
+                                <button class="{{ $product->active ? '' : 'activate-product-button' }}">{{ $product->active ? 'Deactivate' : 'Activate' }}</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="7">No matching products.</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+    {{ $products->links() }}
+</section>
 @endsection
