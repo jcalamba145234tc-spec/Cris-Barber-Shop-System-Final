@@ -30,7 +30,8 @@ class BarberStatusDropdownTest extends TestCase
     {
         $this->actingAs($this->admin)->get('/barbers')->assertOk()
             ->assertSee('name="barber_state"', false)
-            ->assertSee('onchange="this.form.requestSubmit()"', false)
+            ->assertSee('data-autosave-control', false)
+            ->assertSee('data-save-feedback', false)
             ->assertDontSee('aria-label="Manual availability"', false)
             ->assertDontSee('aria-label="Barber status"', false);
     }

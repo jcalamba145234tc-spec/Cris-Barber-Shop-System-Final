@@ -23,11 +23,11 @@
         <tbody>
             @forelse($products as $product)
                 <tr>
-                    <td>{{ $product->name }}</td>
+                    <td><span class="cell-title" title="{{ $product->name }}">{{ $product->name }}</span></td>
                     <td>{{ $product->category ?? '—' }}</td>
                     <td>{{ \App\Support\WholeQuantity::display($product->stock) }} {{ $product->unit }}</td>
                     <td>{{ \App\Support\WholeQuantity::display($product->low_stock_threshold) }}</td>
-                    <td><span @class(['stock-warning' => $product->stock <= $product->low_stock_threshold])>{{ $product->stock_status }}</span></td>
+                    <td><span @class(['badge', 'badge-danger' => $product->stock <= 0, 'badge-warning' => $product->stock > 0 && $product->stock <= $product->low_stock_threshold, 'badge-positive' => $product->stock > $product->low_stock_threshold])>{{ $product->stock_status }}</span></td>
                     <td>{{ $product->active ? 'Active' : 'Inactive' }}</td>
                     <td>
                         <div class="row-actions">
@@ -35,13 +35,13 @@
                             <a href="{{ route('inventory.edit', $product) }}">Edit</a>
                             <form method="POST" action="{{ route('inventory.status', $product) }}" data-confirm="{{ $product->active ? 'Deactivate this product? Linked services will no longer be available.' : 'Activate this product?' }}">
                                 @csrf @method('PATCH')
-                                <button class="{{ $product->active ? '' : 'activate-product-button' }}">{{ $product->active ? 'Deactivate' : 'Activate' }}</button>
+                                <button class="{{ $product->active ? 'danger-button' : 'secondary-button activate-product-button' }}">{{ $product->active ? 'Deactivate' : 'Activate' }}</button>
                             </form>
                         </div>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7">No matching products.</td></tr>
+                <tr><td colspan="7">No matching products. <a href="{{ route('inventory.index') }}">Reset filters</a></td></tr>
             @endforelse
         </tbody>
     </table>

@@ -7,7 +7,8 @@
     <form method="POST" action="{{ route('transactions.store') }}" data-pos-form>
         @csrf
         <input type="hidden" name="checkout_token" value="{{ old('checkout_token', (string)\Illuminate\Support\Str::uuid()) }}">
-        <div class="form-grid pos-form-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="checkout-layout">
+        <div class="checkout-fields">
             <div class="pos-barber-field"><label for="barber_id">Barber</label><select id="barber_id" name="barber_id" required><option value="">Choose barber</option>@foreach($barbers as $barber)<option value="{{ $barber->id }}" @selected(old('barber_id') === $barber->id)>{{ $barber->name }}</option>@endforeach</select></div>
             <fieldset class="service-choices" data-pos-services>
                 <legend>Services / prices <span class="muted">(select one or more)</span></legend>
@@ -42,18 +43,23 @@
             <div class="pos-payment-method"><label for="payment_method">Payment method</label><select id="payment_method" name="payment_method" data-payment-method required><option value="cash" @selected(old('payment_method') === 'cash')>Cash</option><option value="gcash" @selected(old('payment_method') === 'gcash')>GCash</option></select></div>
             <div data-gcash-field hidden><label for="gcash_reference_no">GCash Reference Number</label><input id="gcash_reference_no" name="gcash_reference_no" value="{{ old('gcash_reference_no') }}" inputmode="numeric" pattern="[0-9]{6,30}" minlength="6" maxlength="30" disabled><p class="muted">6–30 digits, manually verified by admin.</p></div>
             <div class="pos-transaction-status"><label for="status">Transaction status</label><select id="status" name="status"><option value="queued" @selected(old('status') === 'queued')>Add to queue (no stock deduction)</option><option value="completed" @selected(old('status') === 'completed')>Service delivered / complete</option></select><p class="muted">GCash pending until verified and completed.</p></div>
-            <article class="stat pos-transaction-total"><span>Transaction total</span><strong data-pos-total aria-live="polite">₱0.00</strong><p class="muted">Price and earnings calculated by server.</p></article>
+
             <div class="pos-cash-received" data-cash-field>
                 <label for="cash_received">Customer's money / Cash received</label>
                 <input id="cash_received" name="cash_received" data-cash-received type="number" inputmode="decimal" min="0" max="99999999.99" step="0.01" value="{{ old('cash_received') }}" required>
                 <p class="muted">Cash only. Enter amount received.</p>
                 <p class="error" data-cash-error role="status" hidden></p>
             </div>
+        </div>
+        <aside class="checkout-summary" aria-label="Checkout summary">
+            <h3>Checkout summary</h3>
+            <article class="stat pos-transaction-total"><span>Transaction total</span><strong data-pos-total aria-live="polite">₱0.00</strong><p class="muted">Price and earnings calculated by server.</p></article>
             <article class="stat pos-cash-change" data-cash-change-card>
                 <span>Customer's change</span><strong data-cash-change aria-live="polite">₱0.00</strong>
                 <p class="muted">Customer's money − transaction total.</p>
             </article>
             <div class="actions pos-submit-actions"><button @disabled($services->isEmpty() || $barbers->isEmpty())>Save transaction</button></div>
+        </aside>
         </div>
     </form>
 </section>

@@ -6,19 +6,22 @@
         <button class="nav-close" type="button" data-nav-close aria-label="Close navigation">&times;</button>
     </div>
     <div class="nav-links" id="shop-navigation-links">
-        <a href="{{ route('dashboard') }}" @class(['active' => request()->routeIs('dashboard')])>Dashboard</a>
+        <p class="nav-section-label">Workspace</p>
+        <a href="{{ route('dashboard') }}" @class(['active' => (request()->routeIs('dashboard') || request()->routeIs('earnings'))]) @if((request()->routeIs('dashboard') || request()->routeIs('earnings'))) aria-current="page" @endif><x-icon name="dashboard"/><span class="sidebar-label">Dashboard</span></a>
         @if(auth()->user()->role === 'admin')
-            <a href="{{ route('pos') }}" @class(['active' => request()->routeIs('pos')])>Point of Sale</a>
-            <a href="{{ route('transactions.index') }}" @class(['active' => request()->routeIs('transactions.*')])>Queue / Transactions</a>
+            <a href="{{ route('pos') }}" @class(['active' => request()->routeIs('pos')]) @if(request()->routeIs('pos')) aria-current="page" @endif><x-icon name="pos"/><span class="sidebar-label">Point of Sale</span></a>
+            <a href="{{ route('transactions.index') }}" @class(['active' => request()->routeIs('transactions.*')]) @if(request()->routeIs('transactions.*')) aria-current="page" @endif><x-icon name="queue"/><span class="sidebar-label">Queue / Transactions</span></a>
+            <p class="nav-section-label">Shop management</p>
             @foreach(['customers' => 'Customers', 'services' => 'Services', 'barbers' => 'Barbers', 'inventory' => 'Inventory'] as $module => $label)
-                <a href="{{ route($module.'.index') }}" @class(['active' => request()->routeIs($module.'.*')])>{{ $label }}</a>
+                <a href="{{ route($module.'.index') }}" @class(['active' => request()->routeIs($module.'.*')]) @if(request()->routeIs($module.'.*')) aria-current="page" @endif><x-icon :name="$module"/><span class="sidebar-label">{{ $label }}</span></a>
             @endforeach
         @else
-            <a href="{{ route('transactions.index') }}" @class(['active' => request()->routeIs('transactions.*')])>My Queue</a>
+            <a href="{{ route('transactions.index') }}" @class(['active' => request()->routeIs('transactions.*')]) @if(request()->routeIs('transactions.*')) aria-current="page" @endif><x-icon name="queue"/><span class="sidebar-label">My Queue</span></a>
         @endif
-        <a href="{{ route('attendance.index') }}" @class(['active' => request()->routeIs('attendance.*')])>Attendance</a>
-        @if(auth()->user()->role === 'admin')<a href="{{ route('earning-claims.index') }}" @class(['active' => request()->routeIs('earning-claims.*')])>Earnings payouts</a>@endif
-        <a href="{{ route('profile.edit') }}" @class(['active' => request()->routeIs('profile.*')])>Account Settings</a>
+        <a href="{{ route('attendance.index') }}" @class(['active' => request()->routeIs('attendance.*')]) @if(request()->routeIs('attendance.*')) aria-current="page" @endif><x-icon name="attendance"/><span class="sidebar-label">Attendance</span></a>
+        @if(auth()->user()->role === 'admin')<a href="{{ route('earning-claims.index') }}" @class(['active' => request()->routeIs('earning-claims.*')]) @if(request()->routeIs('earning-claims.*')) aria-current="page" @endif><x-icon name="earnings"/><span class="sidebar-label">Earnings payouts</span></a>@endif
+        <p class="nav-section-label">Account</p>
+        <a href="{{ route('profile.edit') }}" @class(['active' => request()->routeIs('profile.*')]) @if(request()->routeIs('profile.*')) aria-current="page" @endif><x-icon name="settings"/><span class="sidebar-label">Account Settings</span></a>
         <div class="sidebar-caption">SHOP MANAGEMENT<br><span>Good service. Better business.</span></div>
     </div>
 </nav>

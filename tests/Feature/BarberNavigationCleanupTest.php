@@ -40,7 +40,7 @@ class BarberNavigationCleanupTest extends TestCase
     {
         $response = $this->actingAs($this->barberUser)->get('/dashboard');
         $response->assertOk()->assertDontSee('My Attendance');
-        $this->assertSame(1, substr_count($response->getContent(), '>My Queue</a>'));
+        $this->assertSame(1, substr_count($response->getContent(), '<span class="sidebar-label">My Queue</span>'));
         $this->assertSame(1, substr_count($response->getContent(), 'href="'.route('transactions.index').'"'));
         $this->assertSame(1, substr_count($response->getContent(), 'href="'.route('attendance.index').'"'));
     }

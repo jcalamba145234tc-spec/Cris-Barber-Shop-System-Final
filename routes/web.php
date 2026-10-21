@@ -13,6 +13,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\TransactionRecycleBinController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -31,6 +32,11 @@ Route::middleware(['auth', 'role:admin,barber'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/transactions/recycle-bin', [TransactionRecycleBinController::class, 'index'])->name('transactions.recycle-bin');
+        Route::get('/transactions/recycle-bin/{transaction}', [TransactionRecycleBinController::class, 'show'])->name('transactions.archived-show');
+        Route::post('/transactions/recycle-bin/{transaction}/restore', [TransactionRecycleBinController::class, 'restore'])->name('transactions.restore');
+    });
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
     Route::patch('/transactions/{transaction}/status', [TransactionController::class, 'status'])->name('transactions.status');
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');

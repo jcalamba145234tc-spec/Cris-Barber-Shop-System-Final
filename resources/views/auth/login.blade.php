@@ -1,16 +1,25 @@
 @extends('layouts.app', ['title' => 'Sign in | Cris Barber Shop'])
 
 @section('content')
-<main class="login-shell" id="main-content">
-    <aside class="login-story"><a class="login-wordmark" href="{{ route('login') }}">CRIS<span>BARBER SHOP</span></a><div><p class="eyebrow">The craft. The people. The business.</p><h2>A sharper way<br>to run the shop.</h2><p>One workspace for the team, the queue, and everything that keeps your day moving.</p></div><p class="login-caption">SHOP MANAGEMENT SYSTEM · PHILIPPINES</p></aside>
+<main class="login-shell login-split" id="main-content" tabindex="-1">
+    <aside class="login-story" aria-label="Cris Barber Shop">
+        <p class="login-wordmark">CRIS<span>BARBER SHOP</span></p>
+        <div class="login-message">
+            <p class="eyebrow">The craft. The people. The business.</p>
+            <h2>A sharper way<br> to run the shop.</h2>
+            <p>One workspace for your team, services, and daily operations.</p>
+        </div>
+        <p class="login-caption">Shop management system · Philippines</p>
+    </aside>
     <div class="login-form-area">
     <section class="card login-card">
         <div class="auth-brand flex flex-col items-center gap-3">
-            <img src="{{ asset('images/logo.jpg') }}" alt="Cris Barber Shop logo" class="w-20 h-20 rounded-full object-cover shadow-sm">
+            <img src="{{ asset('images/logo.jpg') }}" alt="Cris Barber Shop logo" class="login-logo" width="64" height="64">
             <div class="brand brand-with-logo">Cris Barber Shop</div>
         </div>
         <h1>Welcome back</h1>
-        <p class="muted">Your workspace is ready. Sign in to get started.</p>
+        <p class="muted">Sign in to manage your day.</p>
+        @if($errors->any())<div class="error-summary" role="alert"><strong>Please review the highlighted fields.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
         <form method="POST" action="{{ route('login') }}">
             @csrf
             <label for="email">Email address</label>

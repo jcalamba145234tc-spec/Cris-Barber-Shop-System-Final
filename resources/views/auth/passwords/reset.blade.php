@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => 'Reset Password | Cris Barber Shop'])
 
 @section('content')
-<main class="page">
+<main class="page" id="main-content" tabindex="-1">
     <section class="card">
         <div class="auth-brand flex flex-col items-center gap-3">
             <img src="{{ asset('images/logo.jpg') }}" alt="Cris Barber Shop logo" class="w-20 h-20 rounded-full object-cover shadow-sm">
@@ -14,7 +14,7 @@
             <div class="error form-error">{{ $errors->first() }}</div>
         @endif
 
-        <form method="POST" action="{{ route('password.store') }}">
+        <form method="POST" action="{{ route('password.update') }}">
             @csrf
             <input type="hidden" name="token" value="{{ $token }}">
             <label for="email">Email address</label>

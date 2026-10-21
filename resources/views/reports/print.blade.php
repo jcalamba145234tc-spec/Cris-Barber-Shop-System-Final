@@ -1,41 +1,8 @@
 @extends('layouts.app', ['title' => 'Financial Report | Cris Barber Shop'])
 
 @section('content')
-<style>
-    .report-paper { width: min(980px, calc(100% - 48px)); margin: 28px auto; padding: 38px; border: 1px solid #e8e7e1; border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
-    .report-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
-    .report-header h1 { margin-top: 14px; }
-    .report-period { margin: 6px 0 0; color: var(--muted); }
-    .report-actions { display: flex; gap: 10px; }
-    .report-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 22px 0 28px; }
-    .report-summary article { padding: 18px; border: 1px solid var(--line); border-radius: 14px; }
-    .report-summary span { color: var(--muted); font-size: .84rem; }
-    .report-summary strong { display: block; margin-top: 8px; font-size: 1.5rem; }
-    .report-section { margin-top: 26px; }
-    .report-section h2 { margin: 0 0 12px; }
-    .report-paper table { min-width: 0; }
-    .report-paper td:last-child, .report-paper th:last-child { text-align: right; }
-    .report-generated { margin-top: 30px; color: var(--muted); font-size: .82rem; }
-    @media print {
-        @page { size: auto; margin: 16mm; }
-        body { background: #fff !important; color: #111; }
-        .report-paper { width: 100%; max-width: none; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
-        .report-actions { display: none !important; }
-        .report-summary article { break-inside: avoid; }
-        .report-section { break-inside: auto; }
-        .table-scroll { overflow: visible; max-height: none; border: 0; }
-        tr { break-inside: avoid; }
-        thead { display: table-header-group; }
-        .report-id { font-size: 7pt; overflow-wrap: anywhere; }
-        .report-paper table { width: 100%; }
-    }
-    @media (max-width: 640px) {
-        .report-paper { width: calc(100% - 32px); margin: 16px; padding: 20px 16px; }
-        .report-header { flex-direction: column; }
-        .report-summary { grid-template-columns: 1fr; }
-    }
-</style>
-<main class="report-paper">
+
+<main class="report-paper" id="main-content" tabindex="-1">
     <header class="report-header">
         <div>
             <div class="brand brand-with-logo">
@@ -85,7 +52,7 @@
         <h2>Completed verified transactions · earnings status</h2>
         <p class="muted field-hint">The period filters service dates, not payout dates. Claim status is current at report generation. Archived customers remain linked.</p>
         <div class="table-scroll"><table><thead><tr><th>Service date / ID</th><th>Customer</th><th>Barber</th><th>Barber share</th><th>Status / claim date</th><th>Confirmed by</th></tr></thead><tbody>
-        @forelse($transactions as $transaction)<tr><td>{{ $transaction->transaction_date?->format('M j, Y') }}<br><span class="report-id">{{ $transaction->id }}</span></td><td>{{ $transaction->customer?->display_name ?? 'Walk-in' }}</td><td>{{ $transaction->barber->name }}</td><td>₱{{ number_format($transaction->barber_share,2) }}</td><td>{{ $transaction->claim ? 'Claimed · '.$transaction->claim->confirmed_at->format('M j, Y g:i A') : 'Unclaimed' }}</td><td>{{ $transaction->claim?->confirmedBy->name ?? '—' }}</td></tr>@empty<tr><td colspan="6">No eligible transactions.</td></tr>@endforelse
+        @forelse($transactions as $transaction)<tr><td>{{ $transaction->transaction_date?->format('M j, Y') }}<br><span class="report-id" title="{{ $transaction->id }}">{{ $transaction->id }}</span></td><td>{{ $transaction->customer?->display_name ?? 'Walk-in' }}</td><td>{{ $transaction->barber->name }}</td><td>₱{{ number_format($transaction->barber_share,2) }}</td><td>{{ $transaction->claim ? 'Claimed · '.$transaction->claim->confirmed_at->format('M j, Y g:i A') : 'Unclaimed' }}</td><td>{{ $transaction->claim?->confirmedBy->name ?? '—' }}</td></tr>@empty<tr><td colspan="6">No eligible transactions.</td></tr>@endforelse
         </tbody></table></div>
     </section>
     <p class="report-generated">Generated {{ $generatedAt->format('M j, Y g:i A') }}</p>

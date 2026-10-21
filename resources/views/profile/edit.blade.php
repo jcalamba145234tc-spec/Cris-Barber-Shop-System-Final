@@ -1,21 +1,14 @@
-@extends('layouts.app', ['title' => 'Account Settings | Cris Barber Shop'])
+@extends('layouts.shop', ['heading' => 'Account Settings'])
 
-@section('content')
-<main class="page">
-    <section class="card profile-settings-card">
+@section('module')
+<div class="settings-layout">
+    <section class="panel profile-settings-card">
         <div class="brand brand-with-logo">
             <img src="{{ asset('images/logo.jpg') }}" alt="Cris Barber Shop logo" class="w-12 h-12 rounded-full object-cover shadow-sm">
             <span>Cris Barber Shop</span>
         </div>
-        <h1>Profile &amp; Account Settings</h1>
+        <h2>Profile &amp; Account Settings</h2>
         <p class="muted">Update your account name or change your password.</p>
-
-        @if (session('status'))
-            <p class="alert">{{ session('status') }}</p>
-        @endif
-        @if ($errors->any())
-            <div class="error form-error">{{ $errors->first() }}</div>
-        @endif
 
         <section
             class="appearance-setting"
@@ -42,6 +35,7 @@
             @csrf
             @method('PUT')
 
+            <h2 class="settings-section">Account information</h2>
             <label for="name">Full name</label>
             <input id="name" name="name" value="{{ old('name', $user->name) }}" autocomplete="name" required>
             @error('name') <p class="error">{{ $message }}</p> @enderror
@@ -51,10 +45,11 @@
             <p id="email-domain-help" class="muted">New email addresses must use @crisbarber.com. You may keep your existing email unchanged.</p>
             @error('email') <p class="error">{{ $message }}</p> @enderror
 
-            <h2 class="profile-section-title">Change password</h2>
+            <h2 class="settings-section">Change password</h2>
+            <p id="password-help" class="field-hint">Leave both fields blank to keep your current password. New passwords must contain at least 8 characters.</p>
            
             <label for="password">New password</label>
-            <input id="password" type="password" name="password" autocomplete="new-password">
+            <input id="password" type="password" name="password" autocomplete="new-password" aria-describedby="password-help">
             @error('password') <p class="error">{{ $message }}</p> @enderror
 
             <label for="password_confirmation">Confirm new password</label>
@@ -66,5 +61,5 @@
             </div>
         </form>
     </section>
-</main>
+</div>
 @endsection

@@ -35,11 +35,20 @@
 <section class="panel">
 <div class="panel-heading"><h2>Today's timecard</h2><span class="badge">{{ today()->format('M j, Y') }}</span></div>
 <p class="muted">Recorded using server time in Asia/Manila. Historical corrections are owner-only.</p>
-<div class="stats grid grid-cols-1 sm:grid-cols-2"><article class="stat"><span>Clock In</span><strong>{{ $todayAttendance?->time_in?->format('g:i A') ?? '—' }}</strong></article><article class="stat"><span>Clock Out</span><strong>{{ $todayAttendance?->time_out?->format('g:i A') ?? '—' }}</strong></article></div>
+<div class="timecard-status"><span class="muted">Attendance status</span><span class="badge badge-{{ $todayAttendance?->status ?? 'not_yet' }}">{{ ucfirst(str_replace('_', ' ', $todayAttendance?->status ?? 'Not clocked in')) }}</span>@if($todayAttendance?->time_out)<span class="badge badge-positive">Clocked out</span>@endif</div>
+<dl class="timecard-grid"><div><dt>Clock In</dt><dd>{{ $todayAttendance?->time_in?->format('g:i A') ?? '—' }}</dd></div><div><dt>Clock Out</dt><dd>{{ $todayAttendance?->time_out?->format('g:i A') ?? '—' }}</dd></div></dl>
 <form class="actions" method="POST" action="{{ route('attendance.clock') }}">@csrf<button name="action" value="in" @disabled($todayAttendance || !$canClockIn)>Clock In</button><button name="action" value="out" class="secondary-button" @disabled(!$todayAttendance?->time_in || $todayAttendance?->time_out || !$canClockIn)>Clock Out</button></form><x-field-error name="action" />
+<p class="field-hint timecard-help">
+@if(!$canClockIn)Clock actions are unavailable while your barber account is inactive or on leave.
+@elseif($todayAttendance?->time_out)Today's timecard is complete. Ask the shop owner for corrections.
+@elseif($todayAttendance?->time_in)Clock-in recorded. Clock out when your shift is complete.
+@elseif($todayAttendance)Today's attendance has already been recorded. Ask the shop owner for corrections.
+@else Clock in to start today's timecard. Times are recorded automatically.
+@endif
+</p>
 </section>
 <section class="panel"><h2>My attendance records</h2>
 <form class="report-filters" method="GET"><div><label for="from">From</label><input id="from" name="from" type="date" value="{{ request('from') }}"></div><div><label for="to">To</label><input id="to" name="to" type="date" value="{{ request('to') }}"></div><button>Filter</button><a href="{{ route('attendance.index') }}">Reset</a></form>
-<table><thead><tr><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Status</th><th>Hours</th></tr></thead><tbody>@forelse($attendance as $record)<tr><td>{{ $record->date->format('M j, Y') }}</td><td>{{ $record->time_in?->format('g:i A') ?? '—' }}</td><td>{{ $record->time_out?->format('g:i A') ?? '—' }}</td><td><span class="badge">{{ ucfirst(str_replace('_',' ',$record->status)) }}</span></td><td>{{ $record->hours ?? '—' }}</td></tr>@empty<tr><td colspan="5" class="empty-state">No attendance records in this period.</td></tr>@endforelse</tbody></table>{{ $attendance->links() }}</section>
+<table><thead><tr><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Status</th><th>Hours</th></tr></thead><tbody>@forelse($attendance as $record)<tr><td>{{ $record->date->format('M j, Y') }}</td><td>{{ $record->time_in?->format('g:i A') ?? '—' }}</td><td>{{ $record->time_out?->format('g:i A') ?? '—' }}</td><td><span class="badge badge-{{ $record->status }}">{{ ucfirst(str_replace('_',' ',$record->status)) }}</span></td><td>{{ $record->hours ?? '—' }}</td></tr>@empty<tr><td colspan="5" class="empty-state">No attendance records in this period. <a href="{{ route('attendance.index') }}">Reset filters</a></td></tr>@endforelse</tbody></table>{{ $attendance->links() }}</section>
 @endif
 @endsection

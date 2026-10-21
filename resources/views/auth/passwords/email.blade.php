@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => 'Forgot Password | Cris Barber Shop'])
 
 @section('content')
-<main class="page">
+<main class="page" id="main-content" tabindex="-1">
     <section class="card">
         <div class="auth-brand flex flex-col items-center gap-3">
             <img src="{{ asset('images/logo.jpg') }}" alt="Cris Barber Shop logo" class="w-20 h-20 rounded-full object-cover shadow-sm">

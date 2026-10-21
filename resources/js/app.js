@@ -171,7 +171,7 @@ document.querySelectorAll('[data-pos-form]').forEach((form) => {
                 });
                 const arrows = document.createElement('span');
                 arrows.className = 'service-selection-quantity-arrows';
-                [['Increase quantity', 1, '▲'], ['Decrease quantity', -1, '▼']].forEach(([label, step, arrow]) => {
+                [['Decrease quantity', -1, '−'], ['Increase quantity', 1, '+']].forEach(([label, step, arrow]) => {
                     const button = document.createElement('button');
                     button.type = 'button';
                     button.textContent = arrow;
@@ -322,13 +322,22 @@ confirmation?.querySelector('[data-confirm-accept]').addEventListener('click', (
 document.querySelectorAll('.filter-disclosure').forEach(details => { details.open = window.innerWidth > 760; });
 
 // Enhance tables without hiding any columns on small screens.
-document.querySelectorAll('table').forEach((table) => {
+const enhanceTable = (table) => {
+    table.querySelectorAll('th').forEach((cell) => { cell.scope = 'col'; });
+    [...table.querySelectorAll('thead th')].forEach((heading, index) => {
+        if (!/^(amount|total|price|barber share|barber earnings|your earnings|unclaimed|claimed|transactions|completed services|eligible transactions|threshold|hours)$/i.test(heading.textContent.trim())) return;
+        heading.classList.add('numeric');
+        table.querySelectorAll('tbody tr').forEach((row) => {
+            if (row.children.length > index && !row.children[0].hasAttribute('colspan')) row.children[index].classList.add('numeric');
+        });
+    });
     if (table.parentElement.classList.contains('table-scroll')) return;
     const wrapper = document.createElement('div');
     wrapper.className = 'table-scroll'; wrapper.tabIndex = 0;
-    wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Scrollable data table');
+    wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Data table; scroll horizontally for more columns');
     table.before(wrapper); wrapper.append(table);
-});
+};
+document.querySelectorAll('table').forEach(enhanceTable);
 // Place field-level validation by all ordinary form fields, including older forms.
 const fieldErrors = JSON.parse(document.getElementById('field-errors')?.textContent || '{}');
 Object.entries(fieldErrors).forEach(([name, messages]) => {
@@ -338,7 +347,7 @@ Object.entries(fieldErrors).forEach(([name, messages]) => {
         if (!field.nextElementSibling?.classList.contains('error')) {
             const error = document.createElement('p'); error.className = 'error'; error.textContent = messages[0];
             error.id = `${field.id || name.replaceAll('.', '-')}-error`;
-            field.after(error); field.setAttribute('aria-describedby', error.id);
+            field.after(error); field.setAttribute('aria-describedby', [field.getAttribute('aria-describedby'), error.id].filter(Boolean).join(' '));
         }
     });
 });
@@ -372,9 +381,7 @@ if (liveSearch) {
                 if (!content) throw new Error('Session expired');
                 const table = content.querySelector('table');
                 if (table) {
-                    const wrapper = page.createElement('div'); wrapper.className = 'table-scroll'; wrapper.tabIndex = 0;
-                    wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Scrollable data table');
-                    table.before(wrapper); wrapper.append(table);
+                    enhanceTable(table);
                 }
                 results.replaceChildren(...content.childNodes);
                 status.textContent = page.getElementById('inventory-search-status').textContent;
@@ -395,4 +402,14 @@ document.querySelectorAll('input[type="number"][step="1"]').forEach((input) => {
     };
     input.addEventListener('input', validateQuantity);
     validateQuantity();
+});
+
+// Autosave keeps the existing native POST/PATCH request and its server confirmation.
+document.querySelectorAll('[data-autosave]').forEach((form) => {
+    form.querySelector('[data-autosave-control]')?.addEventListener('change', () => {
+        if (form.dataset.submitting === 'true') return;
+        const feedback = form.querySelector('[data-save-feedback]');
+        if (feedback) feedback.textContent = 'Saving…';
+        form.requestSubmit();
+    });
 });

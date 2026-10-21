@@ -1,6 +1,9 @@
 @extends('layouts.shop', ['heading' => auth()->user()->role === 'admin' ? 'Queue / Transactions' : 'My Queue'])
 @section('module')
 <div class="stats compact-stats grid grid-cols-1 sm:grid-cols-3">@foreach(['active'=>'Active queue','completed'=>'Completed transactions','pending'=>'Pending payment verification'] as $key=>$label)<article class="stat"><span>{{ $label }}</span><strong>{{ $queueSummary[$key] }}</strong></article>@endforeach</div>
+@if(auth()->user()->role === 'admin')
+<div class="transaction-list-heading"><div><h2>Transaction records</h2><p class="muted">Manage services, payments and the active queue.</p></div><a class="button secondary-button" href="{{ route('transactions.recycle-bin') }}">Recycle Bin</a></div>
+@endif
 <section class="panel">
 @php
     $advancedFilterKeys = ['from', 'to', 'service_id', 'payment_method', 'claim_status'];
@@ -25,10 +28,20 @@
         </div>
     </details>
 </form>
-<table><thead><tr><th>Date</th><th>Customer</th><th>Barber</th><th>Service / Qty</th><th>Total</th><th>{{ auth()->user()->role === 'admin' ? 'Barber share' : 'Your earnings' }}</th><th>Payment</th><th>Status</th><th>Earnings status</th><th>Actions</th></tr></thead><tbody>
+<table class="queue-table"><thead><tr><th>Date</th><th>Customer / Barber</th><th>Service / Qty</th><th class="numeric">Total</th><th class="numeric">{{ auth()->user()->role === 'admin' ? 'Barber share' : 'Your earnings' }}</th><th>Payment / Status</th><th>Earnings status</th><th>Actions</th></tr></thead><tbody>
 @forelse($transactions as $transaction)
-<tr><td>{{ $transaction->transaction_date?->format('M d, Y g:i A') ?? $transaction->created_at?->format('M d, Y') }}</td><td>{{ $transaction->customer?->display_name ?? 'Walk-in' }}</td><td>{{ $transaction->barber->name }}</td><td>{{ $transaction->services->isNotEmpty() ? $transaction->services->map(fn ($service) => $service->pivot->service_name.' × '.$service->pivot->quantity)->implode(', ') : ($transaction->service_name ?? 'Legacy service (not recorded)').' × '.$transaction->quantity }}</td><td>₱{{ number_format($transaction->total_amount,2) }}</td><td>₱{{ number_format($transaction->status === 'completed' && $transaction->payment?->verification_status === 'verified' ? $transaction->barber_share : 0,2) }}</td><td>{{ strtoupper($transaction->payment?->payment_method ?? '—') }} / {{ $transaction->payment?->verification_status ?? 'missing' }}</td><td><span class="badge">{{ ucfirst(str_replace('_',' ',$transaction->status)) }}</span></td><td>@include('transactions.claim-status')</td><td><div class="row-actions"><a href="{{ route('transactions.show',$transaction) }}">View</a>@if(auth()->user()->role === 'admin')<a href="{{ route('transactions.edit',$transaction) }}">Edit</a>@if($transaction->status !== 'completed')<form method="POST" action="{{ route('transactions.destroy',$transaction) }}" data-confirm="Archive this transaction? Audit data remains; consumed stock will not be restored.">@csrf @method('DELETE')<button>Remove</button></form>@endif @endif</div></td></tr>
-@empty<tr><td colspan="10" class="empty-state">No matching transactions. Try adjusting the filters.</td></tr>@endforelse
+@php($serviceLabel = $transaction->services->isNotEmpty() ? $transaction->services->map(fn ($service) => $service->pivot->service_name.' × '.$service->pivot->quantity)->implode(', ') : ($transaction->service_name ?? 'Legacy service (not recorded)').' × '.$transaction->quantity)
+<tr>
+    <td class="cell-date">{{ $transaction->transaction_date?->format('M j, Y') ?? $transaction->created_at?->format('M j, Y') }}<span class="cell-meta">{{ $transaction->transaction_date?->format('g:i A') }}</span><span class="sr-only">{{ $transaction->id }}</span></td>
+    <td><span class="cell-title" title="{{ $transaction->customer?->display_name ?? 'Walk-in' }}">{{ $transaction->customer?->display_name ?? 'Walk-in' }}</span><span class="cell-meta">{{ $transaction->barber->name }}</span></td>
+    <td><span class="cell-title" title="{{ $serviceLabel }}">{{ $serviceLabel }}</span></td>
+    <td class="money">₱{{ number_format($transaction->total_amount,2) }}</td>
+    <td class="money">₱{{ number_format($transaction->status === 'completed' && $transaction->payment?->verification_status === 'verified' ? $transaction->barber_share : 0,2) }}</td>
+    <td><span class="badge badge-{{ $transaction->status }}">{{ ucfirst(str_replace('_',' ',$transaction->status)) }}</span><span class="cell-meta">{{ strtoupper($transaction->payment?->payment_method ?? '—') }} · {{ ucfirst($transaction->payment?->verification_status ?? 'missing') }}</span></td>
+    <td>@include('transactions.claim-status')</td>
+    <td><div class="row-actions"><a href="{{ route('transactions.show',$transaction) }}">View</a>@if(auth()->user()->role === 'admin')<a href="{{ route('transactions.edit',$transaction) }}">Edit</a>@if($transaction->status !== 'completed')<form method="POST" action="{{ route('transactions.destroy',$transaction) }}" data-confirm="Move this transaction to the recycle bin? You can view or restore it there. Consumed stock will not be returned.">@csrf @method('DELETE')<button class="danger-button">Archive</button></form>@endif @endif</div></td>
+</tr>
+@empty<tr><td colspan="8" class="empty-state">No matching transactions. Try adjusting the filters. <a href="{{ route('transactions.index') }}">Reset filters</a></td></tr>@endforelse
 </tbody></table>{{ $transactions->links() }}
 </section>
 @endsection
