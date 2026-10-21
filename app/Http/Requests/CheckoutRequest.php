@@ -35,7 +35,7 @@ class CheckoutRequest extends FormRequest
             'service_quantities' => ['required_without:quantity', 'array', 'min:1', 'max:50'],
             'service_quantities.*' => ['required', 'integer', 'min:1', 'max:100'],
             'payment_method' => ['required', 'in:cash,gcash'],
-            'cash_received' => ['exclude_unless:payment_method,cash', 'required', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99', 'regex:/^\d{1,10}(?:\.\d{1,2})?$/'],
+            'cash_received' => ['exclude_unless:payment_method,cash', 'required', 'numeric', 'decimal:0,2', 'min:0', 'max:99999999.99', 'regex:/^\d{1,10}(?:\.\d{1,2})?$/'],
             'change_amount' => ['prohibited'],
             'gcash_reference_no' => ['exclude_unless:payment_method,gcash', 'required', 'regex:/^[0-9]{6,30}$/', $referenceRule],
             // Ignore browser-supplied dates; the workflow timestamps new sales on the server.

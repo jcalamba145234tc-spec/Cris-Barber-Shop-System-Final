@@ -143,7 +143,7 @@ class ShopManagementTest extends TestCase
 
     public function test_admin_can_create_barber_but_not_web_admin(): void
     {
-        $data = ['name' => 'New Barber', 'email' => 'new@crisbarber.com', 'role' => 'barber', 'password' => 'Valid-password-123', 'password_confirmation' => 'Valid-password-123'];
+        $data = ['first_name' => 'New', 'last_name' => 'Barber', 'email' => 'new.barber@crisbarbershop.local', 'role' => 'barber', 'password' => 'Valid-password-123', 'password_confirmation' => 'Valid-password-123'];
         $this->actingAs($this->admin)->post('/accounts', $data)->assertRedirect('/barbers');
         $new = User::where('email', $data['email'])->firstOrFail();
         $this->assertDatabaseHas('barbers', ['user_id' => $new->id]);
@@ -157,7 +157,7 @@ class ShopManagementTest extends TestCase
     {
         $transaction = $this->queued();
         $customer = Customer::create(['name' => 'Customer A']);
-        $urls = ['/dashboard', '/pos', '/transactions', '/history', '/inventory', '/inventory/create', '/inventory/'.$this->product->id, '/inventory/'.$this->product->id.'/edit', '/services', '/services/create', '/services/'.$this->service->id, '/services/'.$this->service->id.'/edit', '/barbers', '/attendance', '/customers', '/customers/create', '/customers/'.$customer->id, '/customers/'.$customer->id.'/edit', '/profile', '/accounts/create', '/transactions/'.$transaction->id, '/transactions/'.$transaction->id.'/edit', '/reports/pdf', '/reports/csv'];
+        $urls = ['/dashboard', '/pos', '/transactions', '/inventory', '/inventory/create', '/inventory/'.$this->product->id, '/inventory/'.$this->product->id.'/edit', '/services', '/services/create', '/services/'.$this->service->id, '/services/'.$this->service->id.'/edit', '/barbers', '/attendance', '/customers', '/customers/'.$customer->id, '/profile', '/transactions/'.$transaction->id, '/transactions/'.$transaction->id.'/edit', '/reports/pdf', '/reports/csv'];
         foreach ($urls as $url) {
             $this->actingAs($this->admin)->get($url)->assertOk();
         }
@@ -433,7 +433,7 @@ class ShopManagementTest extends TestCase
         $other = Barber::create(['first_name' => 'Other', 'last_name' => 'Barber', 'hired_date' => today()]);
         app(TransactionWorkflow::class)->create($this->checkout(['barber_id' => $other->id]), $this->admin);
         $this->actingAs($this->barberUser)->get('/dashboard')->assertViewHas('todayEarnings', 75)->assertViewHas('totalEarnings', 75)->assertSee("Today's Earnings", false)->assertSee('Total Earnings');
-        $this->get('/history')->assertSee($transaction->id)->assertDontSee('Other Barber');
+        $this->get('/transactions')->assertSee($transaction->id)->assertDontSee('Other Barber');
         $transaction->payment->update(['verification_status' => 'pending']);
         $this->get('/dashboard')->assertViewHas('totalEarnings', 0);
     }

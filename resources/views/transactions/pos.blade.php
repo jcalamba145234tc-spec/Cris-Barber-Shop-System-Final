@@ -45,7 +45,7 @@
             <article class="stat pos-transaction-total"><span>Transaction total</span><strong data-pos-total aria-live="polite">₱0.00</strong><p class="muted">Price and earnings calculated by server.</p></article>
             <div class="pos-cash-received" data-cash-field>
                 <label for="cash_received">Customer's money / Cash received</label>
-                <input id="cash_received" name="cash_received" data-cash-received type="number" inputmode="decimal" min="0" max="9999999999.99" step="0.01" value="{{ old('cash_received') }}" required>
+                <input id="cash_received" name="cash_received" data-cash-received type="number" inputmode="decimal" min="0" max="99999999.99" step="0.01" value="{{ old('cash_received') }}" required>
                 <p class="muted">Cash only. Enter amount received.</p>
                 <p class="error" data-cash-error role="status" hidden></p>
             </div>

@@ -24,17 +24,15 @@ class ShopEmailDomainTest extends TestCase
         }
     }
 
-    public function test_admin_can_create_shop_barber_but_external_email_is_rejected(): void
+    public function test_admin_creation_generates_local_login_and_ignores_submitted_email(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $data = ['name' => 'Jake', 'email' => 'jake@gmail.com', 'role' => 'barber', 'password' => 'Valid-password-123', 'password_confirmation' => 'Valid-password-123'];
-        $this->actingAs($admin)->post('/accounts', $data)->assertSessionHasErrors('email');
-        $this->assertDatabaseMissing('users', ['email' => 'jake@gmail.com']);
-        $data['email'] = 'jake@crisbarber.com';
+        $data = ['first_name' => 'Jake', 'last_name' => 'Calamba', 'email' => 'attacker@gmail.com', 'role' => 'barber', 'password' => 'Valid-password-123', 'password_confirmation' => 'Valid-password-123'];
+        $this->actingAs($admin)->post('/accounts', $data)->assertRedirect('/barbers')->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('users', ['name' => 'Jake Calamba', 'email' => 'jake.calamba@crisbarbershop.local', 'role' => 'barber']);
+        $this->assertDatabaseMissing('users', ['email' => 'attacker@gmail.com']);
         $this->post('/accounts', $data)->assertRedirect('/barbers')->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('users', ['email' => $data['email'], 'role' => 'barber']);
-        $this->assertDatabaseHas('barbers', ['user_id' => User::where('email', $data['email'])->firstOrFail()->id]);
-        $this->post('/accounts', $data)->assertSessionHasErrors('email');
+        $this->assertDatabaseHas('users', ['email' => 'jake.calamba2@crisbarbershop.local']);
     }
 
     public function test_owner_cli_rejects_external_admin_email(): void
@@ -84,6 +82,7 @@ class ShopEmailDomainTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin)->post('/customers', ['name' => 'Customer', 'email' => 'customer@gmail.com'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('customers', ['email' => 'customer@gmail.com']);
-        $this->get('/accounts/create')->assertSee('Required domain: @crisbarber.com')->assertSee('pattern=', false);
+        $this->get('/accounts/create')->assertRedirect(route('barbers.index', ['add' => 1]));
+        $this->get('/barbers?add=1')->assertSee('First Name')->assertSee('Last Name')->assertSee('readonly', false);
     }
 }

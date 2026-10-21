@@ -27,8 +27,9 @@ class TransactionController extends Controller
             'service_id' => ['nullable', 'exists:services,id'],
             'payment_method' => ['nullable', 'in:cash,gcash'],
             'status' => ['nullable', 'in:queued,in_progress,ready,completed,cancelled'],
+            'claim_status' => ['nullable', 'in:claimed,unclaimed'],
         ]);
-        $query = Transaction::with(['barber.user', 'customer', 'payment', 'services']);
+        $query = Transaction::with(['barber.user', 'customer', 'payment', 'services', 'claim']);
         if ($request->user()->role === 'barber') {
             $query->where('barber_id', $this->ownBarber($request)->id);
         }
@@ -41,6 +42,10 @@ class TransactionController extends Controller
                     $query->where($filter, $filters[$filter]);
                 }
             }
+        }
+        if (! empty($filters['claim_status'])) {
+            $query->valid();
+            $filters['claim_status'] === 'claimed' ? $query->whereNotNull('claim_id') : $query->whereNull('claim_id');
         }
         if (! empty($filters['payment_method'])) {
             $query->whereHas('payment', fn ($p) => $p->where('payment_method', $filters['payment_method']));
@@ -58,11 +63,13 @@ class TransactionController extends Controller
                 ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', $term))
                 ->orWhereHas('payment', fn ($p) => $p->where('gcash_reference_no', 'like', $term)));
         }
-        if ($request->routeIs('history') && empty($filters['status'])) {
-            $query->whereIn('status', ['completed', 'cancelled']);
-        }
 
         return view('transactions.index', [
+            'queueSummary' => [
+                'active' => (clone $query)->whereIn('status', ['queued', 'in_progress', 'ready'])->count(),
+                'completed' => (clone $query)->where('status', 'completed')->count(),
+                'pending' => (clone $query)->whereHas('payment', fn ($payment) => $payment->where('verification_status', 'pending'))->count(),
+            ],
             'transactions' => $query->orderByDesc('transaction_date')->paginate(20)->withQueryString(),
             'barbers' => $request->user()->role === 'admin' ? Barber::with('user')->get() : collect([$this->ownBarber($request)]),
             'services' => Service::orderBy('name')->get(),
@@ -94,7 +101,7 @@ class TransactionController extends Controller
     {
         $this->authorizeRecord($request, $transaction);
 
-        return view('transactions.show', ['transaction' => $transaction->load(['barber.user', 'payment', 'customer', 'products', 'services'])]);
+        return view('transactions.show', ['transaction' => $transaction->load(['barber.user', 'payment', 'customer', 'products', 'services', 'claim.confirmedBy'])]);
     }
 
     public function edit(Transaction $transaction)
@@ -159,7 +166,7 @@ class TransactionController extends Controller
             $locked->delete();
         });
 
-        return redirect()->route('history')->with('status', 'Record removed from active history. Audit data and actual stock consumption retained.');
+        return redirect()->route('transactions.index')->with('status', 'Transaction archived from the active list. Audit data and actual stock consumption retained.');
     }
 
     public function status(Request $request, Transaction $transaction, TransactionWorkflow $workflow)

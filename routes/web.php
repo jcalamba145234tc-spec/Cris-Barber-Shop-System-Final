@@ -5,7 +5,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BarberController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EarningClaimController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -16,6 +18,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => redirect()->route('dashboard'));
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:3,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 });
 Route::middleware(['auth', 'role:admin,barber'])->group(function () {
@@ -25,7 +31,6 @@ Route::middleware(['auth', 'role:admin,barber'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
-    Route::get('/history', [TransactionController::class, 'index'])->name('history');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
     Route::patch('/transactions/{transaction}/status', [TransactionController::class, 'status'])->name('transactions.status');
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
@@ -42,7 +47,13 @@ Route::middleware(['auth', 'role:admin,barber'])->group(function () {
         Route::resource('inventory', InventoryController::class)->parameters(['inventory' => 'product']);
         Route::patch('/inventory/{product}/status', [InventoryController::class, 'updateStatus'])->name('inventory.status');
         Route::post('/inventory/{product}/restock', [InventoryController::class, 'restock'])->name('inventory.restock');
+        Route::get('/customers/recycle-bin', [CustomerController::class, 'recycleBin'])->name('customers.recycle-bin');
+        Route::post('/customers/{customer}/restore', [CustomerController::class, 'restore'])->name('customers.restore');
+        Route::delete('/customers/{customer}/permanent', [CustomerController::class, 'forceDelete'])->name('customers.permanent');
         Route::resource('customers', CustomerController::class);
+        Route::get('/earning-claims', [EarningClaimController::class, 'index'])->name('earning-claims.index');
+        Route::post('/earning-claims/{barber}', [EarningClaimController::class, 'store'])->name('earning-claims.store');
+        Route::get('/accounts/email-preview', [AuthController::class, 'emailPreview'])->name('accounts.email-preview');
         Route::get('/barbers/{barber}/edit', [BarberController::class, 'edit'])->name('barbers.edit');
         Route::put('/barbers/{barber}', [BarberController::class, 'update'])->name('barbers.update');
         Route::get('/barbers', [BarberController::class, 'index'])->name('barbers.index');

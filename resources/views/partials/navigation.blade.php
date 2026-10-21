@@ -17,13 +17,13 @@
             <a href="{{ route('transactions.index') }}" @class(['active' => request()->routeIs('transactions.*')])>My Queue</a>
         @endif
         <a href="{{ route('attendance.index') }}" @class(['active' => request()->routeIs('attendance.*')])>Attendance</a>
-        <a href="{{ route('history') }}" @class(['active' => request()->routeIs('history')])>History</a>
+        @if(auth()->user()->role === 'admin')<a href="{{ route('earning-claims.index') }}" @class(['active' => request()->routeIs('earning-claims.*')])>Earnings payouts</a>@endif
         <a href="{{ route('profile.edit') }}" @class(['active' => request()->routeIs('profile.*')])>Account Settings</a>
-        <form method="POST" action="{{ route('logout') }}" data-confirm="Log out of your account?">@csrf<button type="submit" class="secondary-button">Logout</button></form>
+        <div class="sidebar-caption">SHOP MANAGEMENT<br><span>Good service. Better business.</span></div>
     </div>
 </nav>
 <button class="sidebar-restore" type="button" data-sidebar-restore aria-controls="shop-navigation" aria-expanded="true" aria-label="Open sidebar" title="Open sidebar">&#9776;</button>
 <header class="mobile-nav-bar">
-    <button class="nav-open" type="button" data-nav-open aria-controls="shop-navigation" aria-expanded="false" aria-label="Open navigation"><span aria-hidden="true">&#9776;</span></button>
+    <button class="nav-open" type="button" data-nav-open aria-controls="shop-navigation" aria-expanded="false" aria-label="Open navigation"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
     <a class="brand brand-with-logo" href="{{ route('dashboard') }}"><img src="{{ asset('images/logo.jpg') }}" alt="" width="36" height="36"><span>Cris Barber Shop</span></a>
 </header>

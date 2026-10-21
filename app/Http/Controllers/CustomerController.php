@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CustomerController extends Controller
 {
@@ -16,17 +18,17 @@ class CustomerController extends Controller
             $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term)->orWhere('email', 'like', $term));
         }
 
-        return view('customers.index', ['customers' => $query->orderBy('name')->paginate(20)->withQueryString()]);
+        return view('customers.index', ['customers' => $query->orderBy('name')->paginate(20)->withQueryString(), 'editing' => $request->filled('edit') ? Customer::findOrFail($request->integer('edit')) : null]);
     }
 
     public function create()
     {
-        return view('customers.form', ['customer' => new Customer]);
+        return redirect()->route('customers.index', ['add' => 1]);
     }
 
     public function edit(Customer $customer)
     {
-        return view('customers.form', compact('customer'));
+        return redirect()->route('customers.index', ['edit' => $customer->id]);
     }
 
     public function show(Customer $customer)
@@ -38,21 +40,47 @@ class CustomerController extends Controller
     {
         $customer = Customer::create($this->validated($request));
 
-        return redirect()->route('customers.show', $customer)->with('status', 'Customer added.');
+        return redirect()->route('customers.index')->with('status', 'Customer added.');
     }
 
     public function update(Request $request, Customer $customer)
     {
         $customer->update($this->validated($request));
 
-        return redirect()->route('customers.show', $customer)->with('status', 'Customer updated.');
+        return redirect()->route('customers.index')->with('status', 'Customer updated.');
     }
 
     public function destroy(Customer $customer)
     {
-        $customer->delete();
+        DB::transaction(fn () => Customer::whereKey($customer->id)->lockForUpdate()->firstOrFail()->delete());
 
         return redirect()->route('customers.index')->with('status', 'Customer archived; profile and historical transaction links retained.');
+    }
+
+    public function recycleBin()
+    {
+        return view('customers.recycle-bin', ['customers' => Customer::onlyTrashed()->withCount(['transactions' => fn ($query) => $query->withTrashed()])
+            ->latest('deleted_at')->paginate(20)]);
+    }
+
+    public function restore(string $customer)
+    {
+        DB::transaction(fn () => Customer::onlyTrashed()->whereKey($customer)->lockForUpdate()->firstOrFail()->restore(), 3);
+
+        return back()->with('status', 'Customer restored with all original transaction links.');
+    }
+
+    public function forceDelete(string $customer)
+    {
+        DB::transaction(function () use ($customer) {
+            $record = Customer::onlyTrashed()->whereKey($customer)->lockForUpdate()->firstOrFail();
+            if ($record->transactions()->withTrashed()->lockForUpdate()->first()) {
+                throw ValidationException::withMessages(['customer' => 'Customers with transactions cannot be permanently deleted, including archived transactions.']);
+            }
+            $record->forceDelete();
+        }, 3);
+
+        return back()->with('status', 'Customer permanently deleted. No transactions were linked.');
     }
 
     private function validated(Request $request): array

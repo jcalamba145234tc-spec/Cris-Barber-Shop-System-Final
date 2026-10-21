@@ -59,6 +59,9 @@ class AuditRepairsTest extends TestCase
 
     private function legacyProducts(): void
     {
+        if (DB::getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('Synthetic pre-conversion fixtures use SQLite affinity and triggers; HTTP validation runs on both engines.');
+        }
         // Only in-memory synthetic fixtures: emulate a database before guarded conversion.
         DB::unprepared('DROP TRIGGER whole_products_insert');
         DB::unprepared('DROP TRIGGER whole_products_update');
@@ -253,7 +256,7 @@ class AuditRepairsTest extends TestCase
         $date = now()->subDay()->format('Y-m-d\TH:i');
         $this->actingAs($this->admin)->put('/transactions/'.$sale->id, ['transaction_date' => $date])->assertSessionHasNoErrors();
         $this->assertSame($date, $sale->fresh()->transaction_date->format('Y-m-d\TH:i'));
-        $this->delete('/transactions/'.$sale->id)->assertRedirect('/history');
+        $this->delete('/transactions/'.$sale->id)->assertRedirect('/transactions');
         $this->assertSoftDeleted('transactions', ['id' => $sale->id]);
         $this->assertEquals(10, $this->product->fresh()->stock);
         $this->assertDatabaseHas('payments', ['transaction_id' => $sale->id]);
@@ -291,6 +294,9 @@ class AuditRepairsTest extends TestCase
 
     public function test_sqlite_rejects_fractional_inventory_even_through_direct_database_write(): void
     {
+        if (DB::getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('SQLite trigger-specific regression; HTTP whole-number validation is tested on both engines.');
+        }
         $this->expectException(QueryException::class);
         DB::table('products')->where('id', $this->product->id)->update(['stock' => '1.5']);
     }
@@ -323,7 +329,7 @@ class AuditRepairsTest extends TestCase
     {
         $sale = app(TransactionWorkflow::class)->create($this->checkout(), $this->admin);
         $data = ['name' => 'Updated Barber', 'email' => 'updated@crisbarber.com', 'phone_number' => '09123456789', 'hired_date' => today()->format('Y-m-d')];
-        $this->actingAs($this->admin)->get('/barbers/'.$this->barber->id.'/edit')->assertOk();
+        $this->actingAs($this->admin)->get('/barbers/'.$this->barber->id.'/edit')->assertRedirect(route('barbers.index', ['edit' => $this->barber->id]));
         $this->put('/barbers/'.$this->barber->id, $data)->assertRedirect('/barbers')->assertSessionHasNoErrors();
         $this->assertSame('Updated Barber', $this->barber->fresh()->name);
         $this->assertSame($this->barberUser->id, $this->barber->fresh()->user_id);
@@ -358,7 +364,7 @@ class AuditRepairsTest extends TestCase
             app(TransactionWorkflow::class)->create($this->checkout(), $this->admin);
             $this->fail('The synthetic database failure must be raised.');
         } catch (QueryException $exception) {
-            $this->assertStringContainsString('FOREIGN KEY constraint failed', $exception->getMessage());
+            $this->assertSame('23000', (string) $exception->errorInfo[0]);
         } finally {
             Payment::flushEventListeners();
         }

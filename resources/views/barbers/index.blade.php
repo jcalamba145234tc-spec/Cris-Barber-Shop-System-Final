@@ -11,7 +11,7 @@
     .barber-status-help { margin: 0 0 12px; font-size: .82rem; }
 </style>
 <section class="panel">
-    <div class="panel-heading"><h2>Team / barber accounts</h2><a class="button" href="{{ route('accounts.create') }}">Add barber account</a></div>
+    <div class="panel-heading"><h2>Team / barber accounts</h2><button type="button" x-data @click="$dispatch('open-modal', 'add-barber')">Add Barber</button></div>
     <form class="report-filters barber-filters" method="GET">
         <div><label for="q">Search name or email</label><input id="q" name="q" value="{{ request('q') }}"></div>
         <div><label for="status">Status</label><select id="status" name="status"><option value="">All statuses</option>@foreach(['active','inactive','on_leave'] as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select></div>
@@ -42,7 +42,7 @@
                 <td>
                     @if($barber->user?->role === 'barber')
                         <a href="{{ route('barbers.edit',$barber) }}">Edit details</a>
-                        <details><summary>Reset password</summary><form method="POST" action="{{ route('barbers.password',$barber) }}">@csrf<label>Temporary password<input type="password" name="password" minlength="8" autocomplete="new-password" required></label><label>Confirm<input type="password" name="password_confirmation" minlength="8" autocomplete="new-password" required></label><button>Reset Password</button></form></details>
+                        <button type="button" class="secondary-button" x-data @click="$dispatch('open-modal', 'reset-{{ $barber->id }}')">Reset password</button>
                     @else
                         No linked account
                     @endif
@@ -55,4 +55,11 @@
     </table>
     {{ $barbers->links() }}
 </section>
+<x-modal name="add-barber" title="Add Barber" :open="request()->boolean('add')">@include('barbers.create-form')</x-modal>
+@if($editing)<x-modal name="edit-barber" title="Edit barber details" :open="true">@include('barbers.edit-form', ['barber'=>$editing])</x-modal>@endif
+@foreach($barbers as $barber)
+<x-modal :name="'reset-'.$barber->id" :title="'Reset password · '.$barber->name">
+<form method="POST" action="{{ route('barbers.password',$barber) }}">@csrf<input type="hidden" name="_modal" value="reset-{{ $barber->id }}"><p class="muted">Share the new password with the barber securely.</p><label>Temporary password<input type="password" name="password" minlength="8" autocomplete="new-password" required></label><x-field-error name="password" /><label>Confirm password<input type="password" name="password_confirmation" minlength="8" autocomplete="new-password" required></label><div class="actions justify-end"><button>Reset Password</button></div></form>
+</x-modal>
+@endforeach
 @endsection

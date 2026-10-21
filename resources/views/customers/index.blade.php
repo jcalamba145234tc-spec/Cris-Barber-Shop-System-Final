@@ -1,4 +1,18 @@
 @extends('layouts.shop', ['heading' => 'Customers'])
 @section('module')
-<section class="panel"><div class="panel-heading"><h2>Customer records</h2><a class="button" href="{{ route('customers.create') }}">Add customer</a></div><form class="report-filters" method="GET"><div><label for="q">Search name, email or phone</label><input id="q" name="q" value="{{ request('q') }}"></div><button>Search</button><a href="{{ route('customers.index') }}">Reset</a></form><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead><tbody>@forelse($customers as $customer)<tr><td>{{ $customer->name }}</td><td>{{ $customer->phone }}</td><td>{{ $customer->email }}</td><td><div class="row-actions"><a href="{{ route('customers.show',$customer) }}">View</a><a href="{{ route('customers.edit',$customer) }}">Edit</a><form method="POST" action="{{ route('customers.destroy',$customer) }}" data-confirm="Archive this customer? The profile and historical transaction links will be preserved.">@csrf @method('DELETE')<button>Remove</button></form></div></td></tr>@empty<tr><td colspan="4">No matching customers.</td></tr>@endforelse</tbody></table>{{ $customers->links() }}</section>
+<section class="panel">
+<div class="panel-heading"><div><p class="eyebrow">Your community</p><h2>Customer records</h2></div><div class="row-actions"><a class="button secondary-button" href="{{ route('customers.recycle-bin') }}">Recycle Bin</a>@if($editing)<a class="button" href="{{ route('customers.index',['add'=>1]) }}">Add Customer</a>@else<button type="button" x-data @click="$dispatch('open-modal', 'customer-form')">Add Customer</button>@endif</div></div>
+<form class="report-filters" method="GET"><div><label for="q">Search name, email or phone</label><input id="q" name="q" value="{{ request('q') }}"></div><button>Search</button><a href="{{ route('customers.index') }}">Reset</a></form>
+<table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead><tbody>
+@forelse($customers as $customer)<tr><td><strong>{{ $customer->name }}</strong></td><td>{{ $customer->phone ?? '—' }}</td><td>{{ $customer->email ?? '—' }}</td><td><div class="row-actions"><a href="{{ route('customers.show',$customer) }}">View</a><a href="{{ route('customers.index',['edit'=>$customer->id]) }}">Edit</a><form method="POST" action="{{ route('customers.destroy',$customer) }}" data-confirm="Archive {{ $customer->name }}? Their transactions and earnings will stay intact.">@csrf @method('DELETE')<button class="secondary-button">Archive</button></form></div></td></tr>
+@empty<tr><td colspan="4" class="empty-state">No matching customers. Add a customer to start building your client list.</td></tr>@endforelse
+</tbody></table>{{ $customers->links() }}</section>
+<x-modal name="customer-form" :title="$editing ? 'Edit Customer' : 'Add Customer'" :open="request()->boolean('add') || (bool)$editing">
+<form method="POST" action="{{ $editing ? route('customers.update',$editing) : route('customers.store') }}">
+@csrf @if($editing) @method('PUT') @endif<input type="hidden" name="_modal" value="customer-form">
+<label for="customer-name">Customer name</label><input id="customer-name" name="name" maxlength="255" value="{{ old('name',$editing?->name) }}" autocomplete="name" required><x-field-error name="name" />
+<label for="customer-phone">Phone <span class="muted">(optional)</span></label><input id="customer-phone" name="phone" type="tel" maxlength="30" value="{{ old('phone',$editing?->phone) }}"><x-field-error name="phone" />
+<label for="customer-email">Email <span class="muted">(optional)</span></label><input id="customer-email" name="email" type="email" maxlength="255" value="{{ old('email',$editing?->email) }}"><x-field-error name="email" />
+<div class="actions justify-end"><button type="button" class="secondary-button" x-data @click="$el.closest('dialog').close()">Cancel</button><button>Save customer</button></div></form>
+</x-modal>
 @endsection

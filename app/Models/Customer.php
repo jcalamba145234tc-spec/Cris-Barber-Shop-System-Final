@@ -11,6 +11,11 @@ class Customer extends Model
 
     protected $guarded = ['id'];
 
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->name.($this->trashed() ? ' (archived)' : '');
+    }
+
     public function transactions()
     {
         return $this->hasMany(Transaction::class);

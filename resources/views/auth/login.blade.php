@@ -1,18 +1,20 @@
 @extends('layouts.app', ['title' => 'Sign in | Cris Barber Shop'])
 
 @section('content')
-<main class="page">
-    <section class="card">
+<main class="login-shell" id="main-content">
+    <aside class="login-story"><a class="login-wordmark" href="{{ route('login') }}">CRIS<span>BARBER SHOP</span></a><div><p class="eyebrow">The craft. The people. The business.</p><h2>A sharper way<br>to run the shop.</h2><p>One workspace for the team, the queue, and everything that keeps your day moving.</p></div><p class="login-caption">SHOP MANAGEMENT SYSTEM · PHILIPPINES</p></aside>
+    <div class="login-form-area">
+    <section class="card login-card">
         <div class="auth-brand flex flex-col items-center gap-3">
             <img src="{{ asset('images/logo.jpg') }}" alt="Cris Barber Shop logo" class="w-20 h-20 rounded-full object-cover shadow-sm">
             <div class="brand brand-with-logo">Cris Barber Shop</div>
         </div>
         <h1>Welcome back</h1>
-        <p class="muted">Sign in to open your dashboard.</p>
+        <p class="muted">Your workspace is ready. Sign in to get started.</p>
         <form method="POST" action="{{ route('login') }}">
             @csrf
             <label for="email">Email address</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus>
+            <input id="email" autocomplete="username" type="email" name="email" value="{{ old('email') }}" required autofocus>
             @error('email') <p class="error">{{ $message }}</p> @enderror
             <label for="password">Password</label>
             <div class="password-field">
@@ -23,8 +25,11 @@
                 </button>
             </div>
             <div class="actions"><button class="w-full" type="submit">Sign in</button></div>
+            <p class="auth-support"><a href="{{ route('password.request') }}">Forgot password?</a></p>
         </form>
+        <p class="muted field-hint">Using a generated .local login? Ask the shop owner to reset your password; these addresses do not receive email.</p>
 
     </section>
+    </div>
 </main>
 @endsection

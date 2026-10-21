@@ -22,9 +22,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
     @auth
         @include('partials.navigation')
     @endauth
     @yield('content')
+    @include('partials.feedback')
 </body>
 </html>

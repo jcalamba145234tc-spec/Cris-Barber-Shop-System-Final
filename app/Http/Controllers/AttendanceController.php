@@ -15,32 +15,39 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $filters = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
             'from' => ['nullable', 'date_format:Y-m-d'], 'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
             'barber_id' => ['nullable', 'exists:barbers,id'], 'status' => ['nullable', 'in:present,late,absent,on_leave'],
         ]);
-        $query = Attendance::with('barber.user');
-        $barbers = Barber::with('user');
-        if ($request->user()->role === 'barber') {
-            $own = Barber::where('user_id', $request->user()->id)->firstOrFail();
-            $query->where('barber_id', $own->id);
-            $barbers->whereKey($own->id);
-        }
-        foreach (['barber_id', 'status'] as $key) {
-            if (! empty($filters[$key])) {
-                $query->where($key, $filters[$key]);
+        $selectedDate = $filters['date'] ?? today()->toDateString();
+        if ($request->user()->role === 'admin') {
+            $barbers = Barber::with(['user', 'attendance' => fn ($query) => $query->whereDate('date', $selectedDate)])->orderBy('first_name')->get();
+            foreach ($barbers as $barber) {
+                $record = $barber->attendance->first();
+                $barber->attendance_status = $record?->status ?? ($barber->status === 'on_leave' ? 'on_leave' : ($selectedDate < today()->toDateString() ? 'absent' : 'not_yet'));
             }
+
+            return view('attendance.index', [
+                'barbers' => $barbers, 'selectedDate' => $selectedDate,
+                'summary' => ['present' => $barbers->whereIn('attendance_status', ['present', 'late'])->count(),
+                    'absent' => $barbers->where('attendance_status', 'absent')->count(), 'on_leave' => $barbers->where('attendance_status', 'on_leave')->count()],
+            ]);
         }
+        $own = Barber::where('user_id', $request->user()->id)->firstOrFail();
+        $query = Attendance::with('barber.user')->where('barber_id', $own->id);
         if (! empty($filters['from'])) {
             $query->whereDate('date', '>=', $filters['from']);
         }
         if (! empty($filters['to'])) {
             $query->whereDate('date', '<=', $filters['to']);
         }
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
 
-        return view('attendance.index', [
-            'attendance' => $query->latest('date')->paginate(20)->withQueryString(),
-            'barbers' => $barbers->get(),
-        ]);
+        return view('attendance.index', ['attendance' => $query->latest('date')->paginate(20)->withQueryString(),
+            'todayAttendance' => Attendance::where('barber_id', $own->id)->whereDate('date', today())->first(),
+            'canClockIn' => $own->status === 'active', 'selectedDate' => $selectedDate]);
     }
 
     public function clock(Request $request)

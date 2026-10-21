@@ -1,118 +1,61 @@
-# Cris Barber Shop System
+# Cris Barber Shop Management System
 
-Existing Laravel/Blade application, repaired incrementally against commit `574a630`. No rebuild, framework replacement, database reset, production credential access, commit or push was performed.
+Laravel 13.32 · Blade · Tailwind CSS 4 · Alpine.js 3 · MySQL/MariaDB
 
-**Current assessment: ready for local testing, not certified for deployment.** Read `docs/AUDIT-REPAIR-REPORT-2026-10-15.md` and `docs/AUDIT-2026-10-15.md`. Older assessment/validation documents describe earlier updates and are not evidence for the current run.
+Owner and barber workspaces for POS, queue management, verified Cash/GCash payments, inventory, customers, attendance, earnings payouts, and CSV/print-to-PDF reports.
 
-## Software
+**Start here:** [Implementation and installation handoff](docs/IMPLEMENTATION-2026-10-20.md). It contains the requirement-by-requirement summary, data dictionary/ERD changes, phpMyAdmin/XAMPP setup, SQLite transfer instructions, test results, and limitations. Older dated audit documents describe earlier versions, not the current implementation.
 
-- Composer declares PHP ^8.3 and Laravel ^13.17; lockfile installs **Laravel 13.32.0**. This repair was executed on **PHP 8.4.24**, Composer 2, Node **24.14.1**, npm **11.11.0**, SQLite **3.40.0**.
-- Required extensions are checked by Composer, including PDO SQLite for tests. Preserve your configured database engine; PDO MySQL is required when the deployed application uses MySQL. MySQL/MariaDB/PostgreSQL and PHP 8.3 runtime validation remain staging tasks.
-- Blade, Alpine.js, Tailwind and Vite remain unchanged. No application dependency was added and lockfiles were preserved.
+## Requirements
 
-## Safe update / local testing
+- PHP **8.3+** (tested with 8.4.24), Composer 2, Node 22.12+ or 24, npm.
+- PHP extensions required by Composer, plus `pdo_mysql`; `pdo_sqlite` for tests and optional data transfer.
+- MySQL 8+ or compatible MariaDB (tested with MariaDB 10.11.18). XAMPP commonly bundles MariaDB and phpMyAdmin. XAMPP installations with PHP 8.2 cannot run this Laravel version; upgrade PHP rather than weakening Composer requirements.
 
-1. Back up the project, database, uploaded files, and existing `.env`/`APP_KEY` into protected storage. Verify the backup by restoring it into an isolated staging instance. Never share the backup or commit it.
-2. Review the patch against the exact baseline. Apply to a separate working copy first; preserve your unrelated edits. Do not overwrite `.env`, the database or uploads.
-3. Configure the copy to use a **separate database copy of the same engine**, not production. Confirm host/database/DB_URL manually. Clear cached configuration only in the local copy. Stop writes during migration; preflight is a point-in-time check, not a concurrent-write lock.
-4. Install dependencies and run isolated tests. The commands below were executed in Linux; these PowerShell equivalents require verification on your Windows installation. `composer` must be installed in PATH.
+## New installation
 
-```powershell
+1. Start MySQL in XAMPP. In phpMyAdmin → **Databases**, create `cris_barber_shop` with collation `utf8mb4_unicode_ci`.
+2. In a new project copy:
+
+```sh
 composer install --no-interaction --prefer-dist
-composer validate --strict
-composer check-platform-reqs
+cp .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
+php artisan key:generate
 php artisan config:clear
-php artisan test
-php vendor/bin/pint --test
+php artisan migrate --seed
+php artisan shop:admin owner@crisbarber.com --name="Shop Owner"
 npm ci --ignore-scripts
 npm run build
-php artisan route:list --except-vendor
-php artisan view:cache
-composer audit
-npm audit
-```
-
-Tests use `RefreshDatabase` **only on in-memory SQLite**. `phpunit.xml` forces test settings and `tests/TestCase.php` independently refuses non-testing, external or cached non-memory connections before migrations. Do not bypass this guard. No shop data belongs in test fixtures.
-
-### Migration gate — staging database copy only
-
-On an existing installation with the baseline shop tables present:
-
-```powershell
-php artisan shop:audit-data
-if ($LASTEXITCODE -ne 0) { throw "Stop: owner reconciliation is required. Do not migrate." }
-php artisan migrate:status
-php artisan migrate --pretend
-```
-
-Review the plan. If preflight passes, the database copy is confirmed isolated, and its backup can be restored:
-
-```powershell
-php artisan migrate --force
-if ($LASTEXITCODE -ne 0) { throw "Stop: inspect the migration error. Do not retry blindly." }
-php artisan shop:audit-data
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-For a brand-new installation, preflight runs **after** tables exist; it cannot inspect absent baseline tables. Configure a fresh `.env` from `.env.example`, a new database, and a new application key only in that brand-new instance. Do not use fresh-install procedures for an update. The guarded Composer setup shortcut refuses an existing `.env` or default SQLite database; the explicit steps above are preferred for updates.
+The administrator command securely prompts for a password. There is no public owner registration or default login. `.env.example` uses local MySQL, database `cris_barber_shop`, username `root`, blank password, and Asia/Manila. These root credentials are for local XAMPP only; use a restricted account and a strong password on a server.
 
-Never run `migrate:fresh`, `db:wipe`, destructive rollback, or seeders against an existing shop database. Never regenerate the existing `APP_KEY`. The three new migrations are forward-only; rollback intentionally refuses. Restoration must use a verified backup of the same engine. SQLite backups must be consistent (stop writes/use database-aware backup, including WAL considerations); MySQL backups should use engine-native consistent tools. Backup/restore itself was not tested against your deployed database.
+**Existing installation:** preserve `.env`, `APP_KEY`, uploads, and data. Back up first. Never run `key:generate`, `migrate:fresh`, `db:wipe`, or destructive rollback on an existing shop database. See the handoff for the safe update/SQLite transfer path.
 
-## Quantities versus money
+## Tests and build
 
-- Opening stock and low-stock thresholds: **nonnegative whole numbers**.
-- Restock: **positive whole numbers**, with a UUID submission token recorded once in movement history.
-- Service product requirements: whole numbers; zero/blank means not required. POS quantity: integer 1–100. Stock editing stays read-only; use restock for additions.
-- Quantities such as `1.5`, `2.50` and `0.75` are rejected server-side. Inputs use `step="1"`, with JavaScript/native validity as additional help.
-- Quantity display removes insignificant decimal zeros. Existing fractional values remain exact and show **legacy — review required**; they are not rounded or cast away.
-- `shop:audit-data` identifies table/record/column/value issues and duplicate payment IDs without printing GCash references or customer details. Integer conversion stops before its DDL if any affected quantity is fractional, negative where prohibited or oversized. Historical signed consumption movements are preserved.
-- Monetary columns **remain decimal**. Product cost/service prices retain two decimals. New checkout arithmetic parses decimal strings into integer cents and writes decimal strings. Odd-cent 50/50 split preserves the existing half-up barber share (₱175.51 → barber ₱87.76, shop ₱87.75). Monetary values were not converted to integer database columns.
-
-## Sample services and inventory (optional)
-
-`ServiceSeeder` adds the shop's 11 menu services if they are missing and never overwrites an existing price or duration. For a demo or a brand-new database you can also load example inventory and the example supplies each service uses:
-
-```powershell
-php artisan db:seed --class=InventorySampleSeeder
-```
-
-It adds 10 sample products (whole-number stock, decimal costs), an opening-stock movement for each, and links the supplies to each service. It only adds what is missing and leaves existing products, stock, prices and service supplies untouched, so it is safe to run twice. The supply amounts are examples only: replace them under Inventory and Services with the shop's real figures. Do not load sample data into a database that already holds the shop's real inventory.
-
-## Accounts and workflow
-
-The project owner provisions administrators from an authorized terminal, not public registration:
-
-```powershell
-php artisan shop:admin owner@crisbarber.com --name="Shop Owner"
-```
-
-Use a real unused shop-domain address; the command privately asks for a confirmed password of at least 12 characters. Do not put passwords in command arguments. Existing administrators are not replaced/promoted/reset. New account/email changes require the existing `@crisbarber.com` rule; unchanged legacy addresses can be retained.
-
-Admins manage barber creation, details (name/email/phone/hire date), status/manual availability, and password reset through authorized routes. Barber identity and transaction links are retained. Inactive or missing-profile barber accounts cannot log in/use protected modules; existing inactive sessions can still log out. On-leave accounts retain existing read access; they are not available for POS assignment. Existing self-service profile/password behavior remains in place.
-
-Available barber = active + manually available + no open queued/in-progress/ready work. Attendance does not change availability. Barber self clock-in/out uses shop timezone and today only; administrators may correct attendance. Overnight/payroll rules were not invented.
-
-POS uses only active, stock-eligible services. The server recalculates prices/totals/50:50 shares and snapshots product requirements. Queued transactions do not reserve/deduct stock. Cash completion is atomic. GCash requires a unique 6–30 digit reference and starts pending; a reference is **not proof of funds**. Admin manually checks the actual deposit, verifies (stock rechecked, nothing deducted), then separately completes delivered work (stock rechecked/deducted once). Same-token identical checkouts return the original; changed payloads are rejected.
-
-## History, dashboard and reports
-
-- Eligible sales = completed + verified payment + non-soft-deleted transaction. Dashboard/reports use this existing scope; compensation uses stored historical shares.
-- Completed payment state, transaction date, price/share/requirements cannot be rewritten. Completed sales cannot be removed through history UI. No refund/financial adjustment workflow was invented: owner-approved correction requirements remain a blocker.
-- Customers are archived with soft deletion, not destroyed; historical customer links remain. Archived customers cannot be selected for a new sale.
-- Open records retain existing customer/date/reference correction and soft removal; changed GCash references require verification again. Cancelled transaction dates are frozen. Existing soft-deleted transactions remain excluded from sales.
-- Dashboard: non-archived customer profiles; all barber records; existing available-barber scope; all active/inactive services; payment rows attached to non-deleted transactions (all payment statuses); eligible lifetime/date/month sales; active low-stock products **including zero stock**; open queue and stored shop share.
-- Exports retain approved date/month CSV and browser Print/Save as PDF. The PDF route is a printable view, not a server-generated PDF. No new export formats or undocumented payment-method report filters were added.
-
-## Production verification
-
-Before deployment, confirm real mail delivery, actual GCash receipts, fractional/duplicate legacy reconciliation, backups/restore, shop business-rule acceptance and concurrent stock/attendance behavior on the configured engine. Use HTTPS, document root `public`, writable Laravel storage/cache, `APP_DEBUG=false`, and existing `APP_TIMEZONE` (default Asia/Manila). Do not deploy test mailers/accounts or the disposable QA environment.
-
-After staging acceptance, the following cache commands were validated only in a disposable environment:
-
-```powershell
-php artisan config:cache
-php artisan route:cache
+```sh
+php artisan config:clear
+php artisan test --compact
+npm run build
 php artisan view:cache
 ```
 
-Production dependency installation must preserve the lockfiles. Run tests/style checks with dev dependencies in staging before a production `--no-dev` install. Never use a successful frontend build or unit suite alone as proof of production readiness.
+For MySQL tests, create **a separate empty** local database named `cris_barber_shop_testing` in phpMyAdmin, then:
+
+```sh
+php vendor/phpunit/phpunit/phpunit -c phpunit.mysql.xml
+```
+
+The MySQL suite resets **only that test database**. Test guards reject a production database name, remote host, or database URL. The default suite forces in-memory SQLite. Configure `DB_USERNAME`/`DB_PASSWORD` in your shell when the test database does not use local root/blank credentials. GitHub Actions includes SQLite and MySQL 8 checks.
+
+## Important rules
+
+- Only completed, payment-verified transactions count as earnings. GCash still requires manual owner verification.
+- Amounts use DECIMAL(10,2), with exact integer-cent split arithmetic; barber share + shop share always equals the total. The barber receives the extra cent on odd-cent totals, preserving existing behavior.
+- Stock is deducted once at completion, never at queue creation or payout. Quantities are whole numbers.
+- Owner-confirmed payouts link eligible transactions to one immutable claim. Unclaimed earnings carry forward; stale confirmation and duplicate claims are blocked.
+- Customer archive/restore retains transaction identities. Customers with any transactions, including soft-deleted ones, cannot be permanently deleted.
+- Generated barber logins use `firstname.lastname@crisbarbershop.local`. They do not receive email; the owner resets their passwords. Existing logins stay unchanged.

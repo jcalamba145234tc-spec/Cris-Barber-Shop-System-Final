@@ -58,7 +58,7 @@ class BarberNavigationCleanupTest extends TestCase
 
     public function test_queue_and_attendance_still_open_from_barber_navigation(): void
     {
-        foreach (['/transactions', '/attendance', '/history', '/profile'] as $url) {
+        foreach (['/transactions', '/attendance', '/transactions', '/profile'] as $url) {
             $this->actingAs($this->barberUser)->get($url)->assertOk()->assertDontSee('My Earnings');
         }
     }

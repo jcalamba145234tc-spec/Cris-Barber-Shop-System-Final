@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Barber;
 use App\Models\Customer;
+use App\Models\EarningClaim;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Service;
@@ -19,7 +20,7 @@ class DashboardController extends Controller
         $filters = $request->validate(['date' => ['nullable', 'date_format:Y-m-d'], 'month' => ['nullable', 'date_format:Y-m']]);
         $selectedDate = $filters['date'] ?? today()->format('Y-m-d');
         $selectedMonth = $filters['month'] ?? now()->format('Y-m');
-        $month = Carbon::parse($selectedMonth . '-01');
+        $month = Carbon::parse($selectedMonth.'-01');
         $data = ['selectedDate' => $selectedDate, 'selectedMonth' => $selectedMonth, 'user' => $request->user()];
         if ($request->user()->role === 'barber') {
             $barber = Barber::where('user_id', $request->user()->id)->firstOrFail();
@@ -36,6 +37,10 @@ class DashboardController extends Controller
             return view('dashboard', $data + [
                 'todayEarnings' => (clone $valid)->whereDate('transaction_date', today())->sum('barber_share'),
                 'totalEarnings' => (clone $valid)->sum('barber_share'),
+                'unclaimedBalance' => (clone $valid)->whereNull('claim_id')->sum('barber_share'),
+                'carriedBalance' => (clone $valid)->whereNull('claim_id')->whereDate('transaction_date', '<', today())->sum('barber_share'),
+                'claimedTotal' => (clone $valid)->whereNotNull('claim_id')->sum('barber_share'),
+                'recentClaims' => EarningClaim::where('barber_id', $barber->id)->latest('confirmed_at')->limit(10)->get(),
                 'monthEarnings' => (clone $valid)->whereBetween('transaction_date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])->sum('barber_share'),
                 'salesBreakdown' => $breakdown,
                 'periodGross' => (clone $period)->sum('total_amount'),

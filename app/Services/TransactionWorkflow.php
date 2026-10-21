@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Barber;
+use App\Models\Customer;
 use App\Models\InventoryMovement;
 use App\Models\Payment;
 use App\Models\Product;
@@ -64,6 +65,12 @@ class TransactionWorkflow
             if (! Barber::available()->whereKey($barber->id)->exists()) {
                 throw ValidationException::withMessages(['barber_id' => 'This barber is not currently available.']);
             }
+            if (! empty($data['customer_id'])) {
+                $customer = Customer::whereKey($data['customer_id'])->lockForUpdate()->first();
+                if (! $customer) {
+                    throw ValidationException::withMessages(['customer_id' => 'This customer was archived. Choose an active customer or use Walk-in.']);
+                }
+            }
             $services = Service::whereIn('id', $serviceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             if ($services->count() !== count($serviceIds)) {
                 throw ValidationException::withMessages(['service_ids' => 'One or more selected services are unavailable.']);
@@ -107,6 +114,9 @@ class TransactionWorkflow
                     throw ValidationException::withMessages(['cash_received' => 'Enter the customer\'s cash amount, with at most two decimal places.']);
                 }
                 $cashReceivedCents = Money::cents($cash);
+                if ($cashReceivedCents > 9999999999) {
+                    throw ValidationException::withMessages(['cash_received' => 'Cash received exceeds the monetary storage limit.']);
+                }
                 if ($cashReceivedCents < $cents) {
                     throw ValidationException::withMessages(['cash_received' => 'Customer\'s money must cover the transaction total of ₱'.Money::decimal($cents).'.']);
                 }

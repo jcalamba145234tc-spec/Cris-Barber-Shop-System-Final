@@ -3,50 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barber;
-use App\Models\User;
-use App\Rules\ShopEmailDomain;
+use App\Services\BarberAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
     public function showRegister()
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
-
-        return view('auth.register', ['hasAdmin' => true]);
+        return redirect()->route('barbers.index', ['add' => 1]);
     }
 
-    public function register(Request $request)
+    public function emailPreview(Request $request, BarberAccountService $accounts)
+    {
+        $data = $request->validate(['first_name' => ['required', 'string', 'max:100'], 'last_name' => ['required', 'string', 'max:100']]);
+
+        return response()->json(['email' => $accounts->availableEmail($data['first_name'], $data['last_name'])]);
+    }
+
+    public function register(Request $request, BarberAccountService $accounts)
     {
         abort_unless($request->user()?->role === 'admin', 403);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', new ShopEmailDomain, 'unique:users,email'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
             'role' => ['required', 'in:barber'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
+        $accounts->create($data);
 
-        DB::transaction(function () use ($data): void {
-            $user = User::create($data);
-
-            if ($user->role === 'barber') {
-                $name = preg_split('/\s+/', trim($user->name), 2);
-
-                Barber::create([
-                    'user_id' => $user->id,
-                    'first_name' => mb_substr($name[0], 0, 100),
-                    'last_name' => mb_substr($name[1] ?? '-', 0, 100),
-                    'hired_date' => today(),
-                    'status' => 'active',
-                ]);
-            }
-
-        });
-
-        return redirect()->route('barbers.index')->with('status', 'Barber account created.');
+        return redirect()->route('barbers.index')->with('status', 'Barber account created. The generated email is shown in the team list.');
     }
 
     public function showLogin()
@@ -85,6 +72,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login')->with('status', 'You have been signed out securely.');
     }
 }

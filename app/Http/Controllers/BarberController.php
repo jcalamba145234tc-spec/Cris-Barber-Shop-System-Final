@@ -36,7 +36,7 @@ class BarberController extends Controller
             $query->where(fn ($q) => $q->where('availability', 'unavailable')->orWhere('status', '!=', 'active'));
         }
 
-        return view('barbers.index', ['barbers' => $query->orderBy('first_name')->paginate(20)->withQueryString()]);
+        return view('barbers.index', ['barbers' => $query->orderBy('first_name')->paginate(20)->withQueryString(), 'editing' => $request->filled('edit') ? Barber::with('user')->findOrFail($request->input('edit')) : null]);
     }
 
     public function edit(Request $request, Barber $barber)
@@ -44,7 +44,7 @@ class BarberController extends Controller
         abort_unless($request->user()->role === 'admin', 403);
         abort_unless($barber->user?->role === 'barber', 422);
 
-        return view('barbers.edit', ['barber' => $barber]);
+        return redirect()->route('barbers.index', ['edit' => $barber->id]);
     }
 
     public function update(Request $request, Barber $barber)

@@ -23,6 +23,9 @@ class InventoryDisplayPrecisionTest extends TestCase
 
     public function test_formatting_does_not_change_stored_stock_threshold_or_low_stock_logic(): void
     {
+        if (DB::getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('SQLite-only legacy fractional fixture; migrated MySQL columns are integers.');
+        }
         $admin = User::factory()->create(['role' => 'admin']);
         // Emulate an unmigrated legacy database without changing any real data.
         DB::unprepared('DROP TRIGGER whole_products_insert');

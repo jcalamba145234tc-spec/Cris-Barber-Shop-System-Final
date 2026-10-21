@@ -14,7 +14,12 @@ class Transaction extends Model
 
     protected function casts(): array
     {
-        return ['transaction_date' => 'datetime', 'completed_at' => 'datetime', 'inventory_deducted_at' => 'datetime', 'inventory_managed' => 'boolean'];
+        return ['transaction_date' => 'datetime', 'completed_at' => 'datetime', 'inventory_deducted_at' => 'datetime', 'inventory_managed' => 'boolean', 'total_amount' => 'decimal:2', 'barber_share' => 'decimal:2', 'shop_share' => 'decimal:2'];
+    }
+
+    public function claim()
+    {
+        return $this->belongsTo(EarningClaim::class, 'claim_id');
     }
 
     public function barber()

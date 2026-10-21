@@ -24,6 +24,9 @@ class PasswordResetController extends Controller
             'email' => ['required', 'email'],
         ]);
 
+        if (str_ends_with(strtolower($validated['email']), '@crisbarbershop.local')) {
+            return back()->with('status', 'Generated shop logins do not receive email. Ask the shop owner to reset your password from the Barbers list.');
+        }
         $status = PasswordBroker::sendResetLink($validated);
 
         return $status === PasswordBroker::RESET_LINK_SENT

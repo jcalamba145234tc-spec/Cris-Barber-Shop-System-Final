@@ -19,6 +19,11 @@ class Barber extends Model
         'phone_number',
     ];
 
+    public function attendance()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

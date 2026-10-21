@@ -20,7 +20,7 @@ class InventoryController extends Controller
         ]);
         $query = Product::query();
         if (! empty($filters['q'])) {
-            $query->where('name', 'like', '%'.$filters['q'].'%');
+            $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim($filters['q'])).'%']);
         }
         if (! empty($filters['category'])) {
             $query->where('category', $filters['category']);
@@ -36,6 +36,9 @@ class InventoryController extends Controller
         };
 
         return view('inventory.index', [
+            'stockSummary' => ['products' => (clone $query)->count(),
+                'low' => (clone $query)->where('stock', '>', 0)->whereColumn('stock', '<=', 'low_stock_threshold')->count(),
+                'out' => (clone $query)->where('stock', '<=', 0)->count()],
             'products' => $query->orderBy('name')->paginate(20)->withQueryString(),
             'categories' => Product::whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
         ]);

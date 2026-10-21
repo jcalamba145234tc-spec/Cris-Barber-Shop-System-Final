@@ -26,13 +26,15 @@ class ReportController extends Controller
             $this->csvRow($output, ['Shop share (50%)', $this->csvAmount($report['shopShare'])]);
             $this->csvRow($output, []);
             $this->csvRow($output, ['Barber earnings breakdown']);
-            $this->csvRow($output, ['Barber', 'Completed services', 'Barber earnings']);
+            $this->csvRow($output, ['Barber', 'Completed services', 'Barber earnings', 'Unclaimed', 'Claimed']);
 
             foreach ($report['barbers'] as $barber) {
                 $this->csvRow($output, [
                     $this->safeCsvText($barber->barber_name),
                     $barber->completed_services,
                     $this->csvAmount((float) $barber->barber_earnings),
+                    $this->csvAmount((float) $barber->unclaimed_earnings),
+                    $this->csvAmount((float) $barber->claimed_earnings),
                 ]);
             }
 
@@ -48,6 +50,19 @@ class ReportController extends Controller
                 ]);
             }
 
+            $this->csvRow($output, []);
+            $this->csvRow($output, ['Completed verified transaction detail']);
+            $this->csvRow($output, ['Transaction ID', 'Service date', 'Customer', 'Barber', 'Total', 'Barber share', 'Shop share', 'Earnings status', 'Claimed at (Asia/Manila)', 'Confirmed by', 'Claim ID']);
+            foreach ($report['transactions'] as $transaction) {
+                $this->csvRow($output, [
+                    $transaction->id, $transaction->transaction_date?->format('Y-m-d H:i:s'),
+                    $this->safeCsvText($transaction->customer?->display_name ?? 'Walk-in'),
+                    $this->safeCsvText($transaction->barber->name), $transaction->total_amount,
+                    $transaction->barber_share, $transaction->shop_share, $transaction->claim_id ? 'Claimed' : 'Unclaimed',
+                    $transaction->claim?->confirmed_at->format('Y-m-d H:i:s') ?? '',
+                    $this->safeCsvText($transaction->claim?->confirmedBy->name ?? ''), $transaction->claim_id ?? '',
+                ]);
+            }
             fclose($output);
         }, 'cris-barber-financial-report-'.$filenamePeriod.'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -106,7 +121,7 @@ class ReportController extends Controller
             ->whereBetween('t.transaction_date', [$start, $end])
             ->groupBy('b.id', 'b.first_name', 'b.last_name', 'u.name')
             ->select('b.first_name', 'b.last_name', 'u.name')
-            ->selectRaw('COUNT(t.id) as completed_services, SUM(t.barber_share) as barber_earnings')
+            ->selectRaw('COUNT(t.id) as completed_services, SUM(t.barber_share) as barber_earnings, SUM(CASE WHEN t.claim_id IS NULL THEN t.barber_share ELSE 0 END) as unclaimed_earnings, SUM(CASE WHEN t.claim_id IS NOT NULL THEN t.barber_share ELSE 0 END) as claimed_earnings')
             ->orderBy('b.first_name')
             ->get()
             ->map(function ($barber) {
@@ -152,6 +167,8 @@ class ReportController extends Controller
             'shopShare' => $shopShare,
             'barbers' => $barbers,
             'payments' => $payments,
+            'transactions' => Transaction::valid()->with(['barber.user', 'customer', 'claim.confirmedBy'])
+                ->whereBetween('transaction_date', [$start, $end])->orderBy('transaction_date')->get(),
         ];
     }
 

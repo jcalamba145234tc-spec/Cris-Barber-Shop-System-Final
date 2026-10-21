@@ -61,6 +61,8 @@
 @else
 <div class="stats grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
     <article class="stat"><span>Today's Earnings</span><strong>₱{{ number_format($todayEarnings, 2) }}</strong></article>
+    <article class="stat"><span>Unclaimed Balance</span><strong>₱{{ number_format($unclaimedBalance, 2) }}</strong><p class="muted">Includes ₱{{ number_format($carriedBalance, 2) }} carried over from previous days.</p></article>
+    <article class="stat"><span>Claimed Total</span><strong>₱{{ number_format($claimedTotal, 2) }}</strong></article>
     <article class="stat"><span>Total Earnings</span><strong>₱{{ number_format($totalEarnings, 2) }}</strong></article>
     <article class="stat"><span>Assigned / active services</span><strong>{{ $assignedCount }}</strong></article>
     <article class="stat"><span>Today's Attendance</span><strong>{{ ucfirst($todayAttendance?->status ?? 'Not clocked in') }}</strong></article>
@@ -78,6 +80,7 @@
     @forelse($salesBreakdown as $day)<tr><td>{{ $day->date }}</td><td>{{ $day->total_services }}</td><td>₱{{ number_format($day->barber_share,2) }}</td></tr>@empty<tr><td colspan="3">No valid completed services in this period.</td></tr>@endforelse
     </tbody></table>
 </section>
+<section class="panel"><h2>Recent earnings claims</h2><table><thead><tr><th>Claimed on</th><th>Service dates</th><th>Amount</th><th>Status</th></tr></thead><tbody>@forelse($recentClaims as $claim)<tr><td>{{ $claim->confirmed_at->format('M j, Y g:i A') }}</td><td>{{ $claim->period_start->format('M j, Y') }} – {{ $claim->period_end->format('M j, Y') }}</td><td>₱{{ number_format($claim->amount,2) }}</td><td><span class="badge badge-present">Claimed</span></td></tr>@empty<tr><td colspan="4" class="empty-state">No earnings claimed yet. Your unclaimed balance carries forward automatically.</td></tr>@endforelse</tbody></table></section>
 <section class="panel"><h2>Service menu</h2><p class="muted">Currently available services. Payment entry is restricted to Admin POS.</p><table><thead><tr><th>Service</th><th>Price</th></tr></thead><tbody>@forelse($services as $service)<tr><td>{{ $service->name }}</td><td>₱{{ number_format($service->price,2) }}</td></tr>@empty<tr><td colspan="2">No services currently available.</td></tr>@endforelse</tbody></table></section>
 @endif
 @endsection

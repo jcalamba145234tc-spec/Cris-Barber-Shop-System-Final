@@ -1,4 +1,4 @@
-@extends('layouts.shop', ['heading' => 'Edit history record'])
+@extends('layouts.shop', ['heading' => 'Edit transaction'])
 @section('module')
 <section class="panel"><p class="muted">Correct customer details, or an open transaction date/GCash reference before completion. A changed reference requires verification again. Completed dates and financial records are immutable. Financial corrections require an owner-approved workflow; do not delete and replace completed sales.</p>
 <form method="POST" action="{{ route('transactions.update',$transaction) }}">@csrf @method('PUT')
