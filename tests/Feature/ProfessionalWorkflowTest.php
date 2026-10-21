@@ -272,7 +272,7 @@ class ProfessionalWorkflowTest extends TestCase
         $this->get('/forgot-password')->assertOk();
         $this->post('/forgot-password', ['email' => 'juan.cruz@crisbarbershop.local'])->assertSessionHas('status');
         $this->actingAs(User::factory()->create(['role' => 'admin']))->post('/logout')->assertRedirect('/login')->assertSessionHas('status');
-        $this->get('/login')->assertOk()->assertSee('signed out securely')->assertSee('Forgot password?');
+        $this->get('/login')->assertOk()->assertSee('signed out securely')->assertDontSee('Forgot password?');
     }
 
     public function test_schema_has_claim_audit_links_and_mysql_uses_decimal_money_and_integer_quantities(): void

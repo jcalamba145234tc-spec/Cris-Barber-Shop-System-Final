@@ -25,9 +25,12 @@
                 </button>
             </div>
             <div class="actions"><button class="w-full" type="submit">Sign in</button></div>
-            <p class="auth-support"><a href="{{ route('password.request') }}">Forgot password?</a></p>
+            
         </form>
-        <p class="muted field-hint">Using a generated .local login? Ask the shop owner to reset your password; these addresses do not receive email.</p>
+       <p class="muted field-hint">
+  <strong>Using a generated .local login? Ask the shop owner to reset your password; these addresses do not receive email.</strong>
+</p>
+
 
     </section>
     </div>

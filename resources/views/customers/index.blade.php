@@ -2,7 +2,10 @@
 @section('module')
 <section class="panel">
 <div class="panel-heading"><div><p class="eyebrow">Your community</p><h2>Customer records</h2></div><div class="row-actions"><a class="button secondary-button" href="{{ route('customers.recycle-bin') }}">Recycle Bin</a>@if($editing)<a class="button" href="{{ route('customers.index',['add'=>1]) }}">Add Customer</a>@else<button type="button" x-data @click="$dispatch('open-modal', 'customer-form')">Add Customer</button>@endif</div></div>
-<form class="report-filters" method="GET"><div><label for="q">Search name, email or phone</label><input id="q" name="q" value="{{ request('q') }}"></div><button>Search</button><a href="{{ route('customers.index') }}">Reset</a></form>
+<form class="customer-search-toolbar" method="GET" action="{{ route('customers.index') }}" role="search" aria-label="Customer search">
+    <x-search-autocomplete label="Search customers by name, email or phone" :endpoint="route('customers.index')" placeholder="Search name, email or phone…" />
+    <div class="filter-toolbar-actions"><button type="submit">Search</button><a class="filter-reset" href="{{ route('customers.index') }}">Reset</a></div>
+</form>
 <table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead><tbody>
 @forelse($customers as $customer)<tr><td><strong>{{ $customer->name }}</strong></td><td>{{ $customer->phone ?? '—' }}</td><td>{{ $customer->email ?? '—' }}</td><td><div class="row-actions"><a href="{{ route('customers.show',$customer) }}">View</a><a href="{{ route('customers.index',['edit'=>$customer->id]) }}">Edit</a><form method="POST" action="{{ route('customers.destroy',$customer) }}" data-confirm="Archive {{ $customer->name }}? Their transactions and earnings will stay intact.">@csrf @method('DELETE')<button class="secondary-button">Archive</button></form></div></td></tr>
 @empty<tr><td colspan="4" class="empty-state">No matching customers. Add a customer to start building your client list.</td></tr>@endforelse

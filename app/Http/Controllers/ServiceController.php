@@ -12,15 +12,25 @@ class ServiceController extends Controller
     public function index(Request $request)
     {
         $data = $request->validate(['q' => ['nullable', 'string', 'max:100'], 'active' => ['nullable', 'in:0,1']]);
-        $query = Service::with('products');
-        if (! empty($data['q'])) {
-            $query->where('name', 'like', '%'.$data['q'].'%');
+        $query = Service::query();
+        $term = trim((string) ($data['q'] ?? ''));
+        if ($term !== '') {
+            $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($term).'%']);
         }
         if (isset($data['active'])) {
             $query->where('active', $data['active']);
         }
 
-        return view('services.index', ['services' => $query->orderBy('name')->paginate(20)->withQueryString()]);
+        if ($request->wantsJson()) {
+            return response()->json(['suggestions' => $term === '' ? [] : $query->orderBy('name')->orderBy('id')->limit(8)
+                ->get(['id', 'name', 'price', 'duration_minutes', 'active'])->map(fn (Service $service) => [
+                    'label' => $service->name,
+                    'value' => $service->name,
+                    'detail' => '₱'.number_format($service->price, 2).' · '.$service->duration_minutes.' min · '.($service->active ? 'Active' : 'Inactive'),
+                ])])->header('Cache-Control', 'no-store')->header('Vary', 'Accept');
+        }
+
+        return view('services.index', ['services' => $query->with('products')->orderBy('name')->paginate(20)->withQueryString()]);
     }
 
     public function create()

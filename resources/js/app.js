@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import './search-autocomplete';
 
 window.Alpine = Alpine;
 Alpine.data('barberEmail', (endpoint, first = '', last = '') => ({
@@ -345,6 +346,11 @@ Object.entries(fieldErrors).forEach(([name, messages]) => {
 const liveSearch = document.querySelector('[data-live-search]');
 if (liveSearch) {
     let timer, controller, generation = 0;
+    liveSearch.addEventListener('submit', () => {
+        clearTimeout(timer);
+        controller?.abort();
+        generation++;
+    });
     const search = liveSearch.querySelector('[name="q"]');
     search.addEventListener('input', () => {
         clearTimeout(timer);

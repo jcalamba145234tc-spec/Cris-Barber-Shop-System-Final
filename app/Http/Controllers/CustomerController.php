@@ -13,9 +13,20 @@ class CustomerController extends Controller
     {
         $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
         $query = Customer::query();
-        if (! empty($data['q'])) {
-            $term = '%'.$data['q'].'%';
-            $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term)->orWhere('email', 'like', $term));
+        $term = trim((string) ($data['q'] ?? ''));
+        if ($term !== '') {
+            $pattern = '%'.mb_strtolower($term).'%';
+            $query->where(fn ($q) => $q->whereRaw('LOWER(name) LIKE ?', [$pattern])
+                ->orWhereRaw('LOWER(phone) LIKE ?', [$pattern])->orWhereRaw('LOWER(email) LIKE ?', [$pattern]));
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['suggestions' => $term === '' ? [] : $query->orderBy('name')->orderBy('id')->limit(8)
+                ->get(['id', 'name', 'phone', 'email'])->map(fn (Customer $customer) => [
+                    'label' => $customer->name,
+                    'value' => $customer->name,
+                    'detail' => implode(' · ', array_filter([$customer->phone, $customer->email])),
+                ])])->header('Cache-Control', 'no-store')->header('Vary', 'Accept');
         }
 
         return view('customers.index', ['customers' => $query->orderBy('name')->paginate(20)->withQueryString(), 'editing' => $request->filled('edit') ? Customer::findOrFail($request->integer('edit')) : null]);

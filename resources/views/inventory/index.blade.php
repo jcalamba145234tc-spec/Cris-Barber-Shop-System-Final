@@ -9,7 +9,7 @@
     </div>
     <details class="filter-disclosure" open><summary>Search &amp; filters</summary>
 <form class="report-filters" method="GET" data-live-search>
-        <div><label for="q">Product search</label><input id="q" name="q" value="{{ request('q') }}" autocomplete="off" aria-describedby="inventory-search-status"></div>
+        <x-search-autocomplete label="Product search" :endpoint="route('inventory.index')" placeholder="Search products…" describedby="inventory-search-status" />
         <div><label for="category">Category</label><select id="category" name="category"><option value="">All categories</option>@foreach($categories as $category)<option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>@endforeach</select></div>
         <div><label for="stock_status">Stock status</label><select id="stock_status" name="stock_status"><option value="">All stock</option>@foreach(['in'=>'In Stock','low'=>'Low Stock','out'=>'Out of Stock'] as $value=>$label)<option value="{{ $value }}" @selected(request('stock_status') === $value)>{{ $label }}</option>@endforeach</select></div>
         <div><label for="active">Product status</label><select id="active" name="active"><option value="">All statuses</option><option value="1" @selected(request('active') === '1')>Active</option><option value="0" @selected(request('active') === '0')>Inactive</option></select></div>

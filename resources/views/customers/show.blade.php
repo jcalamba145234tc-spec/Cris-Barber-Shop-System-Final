@@ -13,9 +13,10 @@
             </div>
         </div>
         <div class="customer-actions">
-            @if(session('status') === 'Customer added.')
-                <a class="button button-secondary" href="{{ route('customers.index') }}">Back to customers</a>
-            @endif
+            <a class="button secondary-button" href="{{ route('customers.index') }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg>
+                Back to customers
+            </a>
             <a class="button" href="{{ route('customers.edit', $customer) }}">Edit customer</a>
         </div>
     </div>

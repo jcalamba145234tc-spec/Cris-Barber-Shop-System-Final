@@ -19,8 +19,9 @@ class InventoryController extends Controller
             'stock_status' => ['nullable', 'in:in,low,out'], 'active' => ['nullable', 'in:0,1'],
         ]);
         $query = Product::query();
-        if (! empty($filters['q'])) {
-            $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim($filters['q'])).'%']);
+        $term = trim((string) ($filters['q'] ?? ''));
+        if ($term !== '') {
+            $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($term).'%']);
         }
         if (! empty($filters['category'])) {
             $query->where('category', $filters['category']);
@@ -34,6 +35,15 @@ class InventoryController extends Controller
             'in' => $query->whereColumn('stock', '>', 'low_stock_threshold'),
             default => null,
         };
+
+        if ($request->wantsJson()) {
+            return response()->json(['suggestions' => $term === '' ? [] : $query->orderBy('name')->orderBy('id')->limit(8)
+                ->get(['id', 'name', 'category', 'stock', 'unit', 'low_stock_threshold'])->map(fn (Product $product) => [
+                    'label' => $product->name,
+                    'value' => $product->name,
+                    'detail' => implode(' · ', array_filter([$product->category, WholeQuantity::display($product->stock).' '.$product->unit, $product->stock_status])),
+                ])])->header('Cache-Control', 'no-store')->header('Vary', 'Accept');
+        }
 
         return view('inventory.index', [
             'stockSummary' => ['products' => (clone $query)->count(),
