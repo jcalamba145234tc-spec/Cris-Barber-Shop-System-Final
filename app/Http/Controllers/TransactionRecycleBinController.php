@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Barber;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class TransactionRecycleBinController extends Controller
 {
@@ -36,8 +38,13 @@ class TransactionRecycleBinController extends Controller
     public function restore(string $transaction)
     {
         DB::transaction(function () use ($transaction) {
+            $preview = Transaction::onlyTrashed()->findOrFail($transaction);
+            $barber = Barber::whereKey($preview->barber_id)->lockForUpdate()->firstOrFail();
             // Unarchive only. Do not replay checkout, payment, stock or status transitions.
             $record = Transaction::onlyTrashed()->whereKey($transaction)->lockForUpdate()->firstOrFail();
+            if ($barber->archived_at && in_array($record->status, ['queued', 'in_progress', 'ready'], true)) {
+                throw ValidationException::withMessages(['archive' => 'Restore the barber account before returning this active service to the queue.']);
+            }
             $record->restore();
         });
 

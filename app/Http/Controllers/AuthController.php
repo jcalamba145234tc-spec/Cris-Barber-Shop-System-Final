@@ -52,7 +52,7 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'The provided credentials do not match our records.'])->onlyInput('email');
         }
 
-        if ($request->user()->role === 'barber' && ! Barber::where('user_id', $request->user()->id)->where('status', '!=', 'inactive')->exists()) {
+        if ($request->user()->role === 'barber' && ! Barber::current()->where('user_id', $request->user()->id)->where('status', '!=', 'inactive')->exists()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

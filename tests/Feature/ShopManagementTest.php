@@ -440,6 +440,8 @@ class ShopManagementTest extends TestCase
 
     public function test_attendance_clock_in_out_and_barber_history_protection(): void
     {
+        // Keep the one-hour simulated shift on the same date, regardless of test run time.
+        $this->travelTo(today()->setTime(10, 0));
         $this->actingAs($this->barberUser)->post('/attendance/clock', ['action' => 'in'])->assertSessionHasNoErrors();
         $attendance = Attendance::firstOrFail();
         $this->assertSame($this->barber->id, $attendance->barber_id);

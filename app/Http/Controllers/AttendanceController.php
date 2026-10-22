@@ -21,7 +21,8 @@ class AttendanceController extends Controller
         ]);
         $selectedDate = $filters['date'] ?? today()->toDateString();
         if ($request->user()->role === 'admin') {
-            $barbers = Barber::with(['user', 'attendance' => fn ($query) => $query->whereDate('date', $selectedDate)])->orderBy('first_name')->get();
+            $barbers = Barber::where(fn ($query) => $query->whereNull('archived_at')
+                ->orWhereHas('attendance', fn ($attendance) => $attendance->whereDate('date', $selectedDate)))->with(['user', 'attendance' => fn ($query) => $query->whereDate('date', $selectedDate)])->orderBy('first_name')->get();
             foreach ($barbers as $barber) {
                 $record = $barber->attendance->first();
                 $barber->attendance_status = $record?->status ?? ($barber->status === 'on_leave' ? 'on_leave' : ($selectedDate < today()->toDateString() ? 'absent' : 'not_yet'));

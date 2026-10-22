@@ -170,7 +170,8 @@ class ProfessionalWorkflowTest extends TestCase
 
     public function test_barber_clock_buttons_and_server_block_duplicate_actions(): void
     {
-        $this->freezeTime();
+        // This is a same-day shift test: a real 11 PM run must not travel into tomorrow.
+        $this->travelTo(today()->setTime(10, 0));
         $barber = $this->barber();
         $this->actingAs($barber->user)->get('/attendance')->assertOk()->assertSee('value="out" class="secondary-button" disabled', false);
         $this->post('/attendance/clock', ['action' => 'out'])->assertSessionHasErrors('action');

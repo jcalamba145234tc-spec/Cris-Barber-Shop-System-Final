@@ -19,6 +19,21 @@ class Barber extends Model
         'phone_number',
     ];
 
+    protected function casts(): array
+    {
+        return ['archived_at' => 'datetime', 'restored_at' => 'datetime'];
+    }
+
+    public function scopeCurrent($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    public function archivedBy()
+    {
+        return $this->belongsTo(User::class, 'archived_by');
+    }
+
     public function attendance()
     {
         return $this->hasMany(Attendance::class);
@@ -36,7 +51,7 @@ class Barber extends Model
 
     public function scopeAvailable($query)
     {
-        return $query->where('status', 'active')->where('availability', 'available')
+        return $query->current()->where('status', 'active')->where('availability', 'available')
             ->whereDoesntHave('transactions', fn ($transactions) => $transactions->whereIn('status', ['queued', 'in_progress', 'ready']));
     }
 

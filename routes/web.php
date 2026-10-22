@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BarberArchiveController;
 use App\Http\Controllers\BarberController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -60,6 +61,9 @@ Route::middleware(['auth', 'role:admin,barber'])->group(function () {
         Route::get('/earning-claims', [EarningClaimController::class, 'index'])->name('earning-claims.index');
         Route::post('/earning-claims/{barber}', [EarningClaimController::class, 'store'])->name('earning-claims.store');
         Route::get('/accounts/email-preview', [AuthController::class, 'emailPreview'])->name('accounts.email-preview');
+        Route::get('/barbers/archived', [BarberArchiveController::class, 'index'])->name('barbers.archived');
+        Route::post('/barbers/{barber}/archive', [BarberArchiveController::class, 'archive'])->name('barbers.archive');
+        Route::post('/barbers/{barber}/restore', [BarberArchiveController::class, 'restore'])->name('barbers.restore');
         Route::get('/barbers/{barber}/edit', [BarberController::class, 'edit'])->name('barbers.edit');
         Route::put('/barbers/{barber}', [BarberController::class, 'update'])->name('barbers.update');
         Route::get('/barbers', [BarberController::class, 'index'])->name('barbers.index');

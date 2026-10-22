@@ -56,7 +56,7 @@ class DashboardController extends Controller
 
         return view('dashboard', $data + [
             'totalCustomers' => $totalCustomers,
-            'totalBarbers' => Barber::count(),
+            'totalBarbers' => Barber::current()->count(),
             'totalServices' => Service::count(),
             'totalPayments' => Payment::whereHas('transaction')->count(),
             'availableBarbers' => Barber::available()->count(),

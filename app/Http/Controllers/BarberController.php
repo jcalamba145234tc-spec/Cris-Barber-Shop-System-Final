@@ -8,6 +8,7 @@ use App\Rules\ShopEmailDomain;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -20,7 +21,7 @@ class BarberController extends Controller
             'status' => ['nullable', 'in:active,inactive,on_leave'],
             'availability' => ['nullable', 'in:available,unavailable,busy'],
         ]);
-        $query = Barber::with('user')->withCount(['transactions as open_queue_count' => fn ($q) => $q->whereIn('status', ['queued', 'in_progress', 'ready'])]);
+        $query = Barber::current()->with('user')->withCount(['transactions as open_queue_count' => fn ($q) => $q->whereIn('status', ['queued', 'in_progress', 'ready'])]);
         if (! empty($filters['q'])) {
             $term = '%'.$filters['q'].'%';
             $query->where(fn ($q) => $q->where('first_name', 'like', $term)->orWhere('last_name', 'like', $term)->orWhereHas('user', fn ($u) => $u->where('name', 'like', $term)->orWhere('email', 'like', $term)));
@@ -36,13 +37,14 @@ class BarberController extends Controller
             $query->where(fn ($q) => $q->where('availability', 'unavailable')->orWhere('status', '!=', 'active'));
         }
 
-        return view('barbers.index', ['barbers' => $query->orderBy('first_name')->paginate(20)->withQueryString(), 'editing' => $request->filled('edit') ? Barber::with('user')->findOrFail($request->input('edit')) : null]);
+        return view('barbers.index', ['barbers' => $query->orderBy('first_name')->paginate(20)->withQueryString(), 'archivedCount' => Barber::whereNotNull('archived_at')->count(), 'editing' => $request->filled('edit') ? Barber::current()->with('user')->findOrFail($request->input('edit')) : null]);
     }
 
     public function edit(Request $request, Barber $barber)
     {
         abort_unless($request->user()->role === 'admin', 403);
         abort_unless($barber->user?->role === 'barber', 422);
+        abort_if($barber->archived_at, 409, 'Restore this barber before changing the account.');
 
         return redirect()->route('barbers.index', ['edit' => $barber->id]);
     }
@@ -60,6 +62,7 @@ class BarberController extends Controller
         ]);
         DB::transaction(function () use ($barber, $user, $data) {
             $locked = Barber::whereKey($barber->id)->lockForUpdate()->firstOrFail();
+            abort_if($locked->archived_at, 409, 'Restore this barber before changing the account.');
             $account = User::whereKey($user->id)->where('role', 'barber')->lockForUpdate()->firstOrFail();
             $name = preg_split('/\s+/', trim($data['name']), 2);
             $locked->update(['first_name' => mb_substr($name[0], 0, 100), 'last_name' => mb_substr($name[1] ?? '-', 0, 100),
@@ -95,7 +98,18 @@ class BarberController extends Controller
                 'availability' => ['required', 'in:available,unavailable'],
             ]);
         }
-        DB::transaction(fn () => Barber::whereKey($barber->id)->lockForUpdate()->firstOrFail()->update($data));
+        DB::transaction(function () use ($barber, $data) {
+            $locked = Barber::whereKey($barber->id)->lockForUpdate()->firstOrFail();
+            abort_if($locked->archived_at, 409, 'Restore this barber before changing the account.');
+            $locked->update($data);
+            if ($locked->status === 'inactive') {
+                $account = User::whereKey($locked->user_id)->where('role', 'barber')->lockForUpdate()->first();
+                if ($account) {
+                    $account->forceFill(['remember_token' => Str::random(60)])->save();
+                    DB::table('sessions')->where('user_id', $account->id)->delete();
+                }
+            }
+        });
 
         return back()->with('status', 'Barber status updated.');
     }
@@ -108,13 +122,13 @@ class BarberController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        $user = User::query()
-            ->whereKey($barber->user_id)
-            ->where('role', 'barber')
-            ->firstOrFail();
-
-        $user->password = $validated['password'];
-        $user->save();
+        DB::transaction(function () use ($barber, $validated) {
+            $locked = Barber::whereKey($barber->id)->lockForUpdate()->firstOrFail();
+            abort_if($locked->archived_at, 409, 'Restore this barber before changing the account.');
+            $user = User::whereKey($locked->user_id)->where('role', 'barber')->lockForUpdate()->firstOrFail();
+            $user->password = $validated['password'];
+            $user->save();
+        });
 
         return back()->with('status', 'Barber password reset successfully. Share the temporary password with the barber securely.');
     }
