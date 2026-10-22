@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Attendance;
 use App\Models\Barber;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 class BarberArchiveController extends Controller
 {
@@ -30,20 +27,12 @@ class BarberArchiveController extends Controller
     public function archive(Request $request, Barber $barber)
     {
         abort_unless($request->user()?->role === 'admin', 403);
-        $request->validate(['confirmation' => ['required', 'accepted']]);
         DB::transaction(function () use ($request, $barber) {
             $locked = Barber::whereKey($barber->id)->lockForUpdate()->firstOrFail();
             abort_if($locked->archived_at, 409, 'This barber is already archived.');
             $user = User::whereKey($locked->user_id)->where('role', 'barber')->lockForUpdate()->firstOrFail();
-            if ($locked->transactions()->whereIn('status', ['queued', 'in_progress', 'ready'])->exists()) {
-                throw ValidationException::withMessages(['archive' => 'Finish or cancel the barber’s active services before archiving.']);
-            }
-            if (Transaction::valid()->where('barber_id', $locked->id)->whereNull('claim_id')->where('barber_share', '>', 0)->exists()) {
-                throw ValidationException::withMessages(['archive' => 'Settle the barber’s unclaimed earnings in Earnings payouts before archiving.']);
-            }
-            if (Attendance::where('barber_id', $locked->id)->whereNotNull('time_in')->whereNull('time_out')->exists()) {
-                throw ValidationException::withMessages(['archive' => 'Close the barber’s open attendance record before archiving.']);
-            }
+            // Owner-requested direct archive: preserve open work and unpaid balances unchanged.
+            // This blocks login and new assignments; it does not settle or cancel existing records.
             $locked->forceFill(['archived_at' => now(), 'archived_by' => $request->user()->id,
                 'restored_at' => null, 'restored_by' => null, 'status' => 'inactive', 'availability' => 'unavailable'])->save();
             // Revoke database sessions and remember-me tokens without deleting the account or its history.

@@ -67,23 +67,51 @@ class BarberArchiveTest extends TestCase
         $this->assertSame('Returning Barber', $sale->fresh()->barber->name);
     }
 
-    public function test_active_services_unpaid_earnings_and_open_attendance_block_archiving(): void
+    public function test_owner_can_archive_without_prerequisites_or_checkbox_and_preserves_open_obligations(): void
     {
+        $barber = $this->barber();
+        $transactions = collect(['queued', 'in_progress', 'ready', 'completed'])->map(fn ($status) => $this->sale($barber, $status));
+        $originalTransactions = $transactions->mapWithKeys(fn ($sale) => [$sale->id => $sale->fresh()->getRawOriginal()]);
+        $originalPayments = Payment::orderBy('id')->get()->map(fn ($payment) => $payment->getRawOriginal())->all();
+        $attendance = Attendance::create(['barber_id' => $barber->id, 'date' => today(), 'status' => 'present', 'time_in' => now()]);
+        $originalAttendance = $attendance->fresh()->getRawOriginal();
+        $password = $barber->user->password;
         $admin = User::factory()->create(['role' => 'admin']);
-        foreach (['queued', 'in_progress', 'ready'] as $status) {
-            $barber = $this->barber();
-            $this->sale($barber, $status);
-            $this->actingAs($admin)->post(route('barbers.archive', $barber), ['confirmation' => 1])->assertSessionHasErrors('archive');
-            $this->assertNull($barber->fresh()->archived_at);
+
+        $this->actingAs($admin)->post(route('barbers.archive', $barber))->assertRedirect(route('barbers.index'))->assertSessionHasNoErrors();
+        $this->assertNotNull($barber->fresh()->archived_at);
+        $this->assertSame($admin->id, $barber->fresh()->archived_by);
+        $this->assertSame('inactive', $barber->fresh()->status);
+        $this->assertSame('unavailable', $barber->fresh()->availability);
+        $this->assertSame($password, $barber->user->fresh()->password);
+        foreach ($transactions as $sale) {
+            $this->assertSame($originalTransactions[$sale->id], $sale->fresh()->getRawOriginal());
         }
-        $barber = $this->barber();
-        $this->sale($barber);
-        $this->post(route('barbers.archive', $barber), ['confirmation' => 1])->assertSessionHasErrors('archive');
+        $this->assertSame($originalPayments, Payment::orderBy('id')->get()->map(fn ($payment) => $payment->getRawOriginal())->all());
+        $this->assertSame($originalAttendance, $attendance->fresh()->getRawOriginal());
+        $this->assertDatabaseCount('earning_claims', 0);
+        $this->assertDatabaseCount('inventory_movements', 0);
+        $this->assertFalse(Barber::available()->whereKey($barber->id)->exists());
+
+        $this->get(route('barbers.index'))->assertDontSee($barber->user->email);
+        $this->get(route('barbers.archived'))->assertSee($barber->user->email);
+        $this->get(route('transactions.show', $transactions->first()))->assertOk();
+        $this->get(route('attendance.index'))->assertOk()->assertSee('Returning Barber');
+        $this->post(route('barbers.restore', $barber), ['confirmation' => 1])->assertRedirect();
         $this->assertNull($barber->fresh()->archived_at);
-        $barber = $this->barber();
-        Attendance::create(['barber_id' => $barber->id, 'date' => today(), 'status' => 'present', 'time_in' => now()]);
-        $this->post(route('barbers.archive', $barber), ['confirmation' => 1])->assertSessionHasErrors('archive');
-        $this->assertNull($barber->fresh()->archived_at);
+        $this->assertSame($originalAttendance, $attendance->fresh()->getRawOriginal());
+        foreach ($transactions as $sale) {
+            $this->assertSame($originalTransactions[$sale->id], $sale->fresh()->getRawOriginal());
+        }
+    }
+
+    public function test_archive_dialog_has_no_required_checkbox_and_explains_preserved_obligations(): void
+    {
+        $this->barber();
+        $this->actingAs(User::factory()->create(['role' => 'admin']))->get(route('barbers.index'))->assertOk()
+            ->assertSee('You can archive now, even with active services, open attendance or unclaimed earnings.')
+            ->assertDontSee('name="confirmation"', false)
+            ->assertDontSee('Finish or cancel active services, settle unclaimed earnings, and close open attendance first.');
     }
 
     public function test_guest_and_barber_cannot_archive_restore_or_view_archive(): void
@@ -99,14 +127,13 @@ class BarberArchiveTest extends TestCase
         }
     }
 
-    public function test_confirmation_and_repeat_action_guards_do_not_delete_accounts(): void
+    public function test_repeat_action_guards_and_restore_confirmation_do_not_delete_accounts(): void
     {
         $barber = $this->barber();
         $this->actingAs(User::factory()->create(['role' => 'admin']));
-        $this->post(route('barbers.archive', $barber))->assertSessionHasErrors('confirmation');
         $this->post(route('barbers.restore', $barber), ['confirmation' => 1])->assertStatus(409);
-        $this->post(route('barbers.archive', $barber), ['confirmation' => 1])->assertRedirect();
-        $this->post(route('barbers.archive', $barber), ['confirmation' => 1])->assertStatus(409);
+        $this->post(route('barbers.archive', $barber))->assertRedirect();
+        $this->post(route('barbers.archive', $barber))->assertStatus(409);
         $this->post(route('barbers.restore', $barber))->assertSessionHasErrors('confirmation');
         $this->post(route('barbers.restore', $barber), ['confirmation' => 1])->assertRedirect();
         $this->post(route('barbers.restore', $barber), ['confirmation' => 1])->assertStatus(409);
@@ -217,13 +244,13 @@ class BarberArchiveTest extends TestCase
         $this->assertDatabaseCount('transactions', 0);
     }
 
-    public function test_deactivate_button_blocks_login_without_archiving_or_changing_history(): void
+    public function test_inactive_dropdown_blocks_login_without_archiving_or_changing_history(): void
     {
         $barber = $this->barber();
         $transaction = $this->sale($barber, 'queued');
         $original = $transaction->fresh()->getRawOriginal();
         DB::table('sessions')->insert(['id' => 'deactivate-session', 'user_id' => $barber->user_id, 'payload' => '', 'last_activity' => time()]);
-        $this->actingAs(User::factory()->create(['role' => 'admin']))->get(route('barbers.index'))->assertOk()->assertSee('Deactivate account');
+        $this->actingAs(User::factory()->create(['role' => 'admin']))->get(route('barbers.index'))->assertOk()->assertSee('Inactive blocks login.')->assertDontSee('Deactivate account');
         $this->patch(route('barbers.status', $barber), ['barber_state' => 'inactive'])->assertRedirect();
         $this->assertNull($barber->fresh()->archived_at);
         $this->assertSame('inactive', $barber->fresh()->status);
