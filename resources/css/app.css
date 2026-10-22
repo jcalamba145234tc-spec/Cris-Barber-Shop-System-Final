@@ -961,3 +961,28 @@ tbody tr:hover td, :root.dark tbody tr:hover td { background: color-mix(in srgb,
     .transaction-record-actions .row-actions > a, .transaction-record-actions .row-actions > form { flex: 1 1 180px; }
     .transaction-record-actions .row-actions button { width: 100%; }
 }
+
+/* Compact barber accounts: two clear row actions, no stacked desktop cells. */
+.barber-accounts-panel .barber-accounts-heading { margin-top: 0; margin-bottom: 20px; }
+.barber-toolbar-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.barber-toolbar-actions > * { white-space: nowrap; }
+.barber-accounts-panel .barber-table { width: 100%; min-width: 1000px; }
+.barber-accounts-panel .barber-table th,
+.barber-accounts-panel .barber-table td { padding: 12px; white-space: nowrap; }
+.barber-accounts-panel .barber-table th { font-size: .75rem; }
+.barber-accounts-panel .barber-table td:nth-child(2) { font-size: .8125rem; }
+.barber-accounts-panel .barber-table th:nth-child(4),
+.barber-accounts-panel .barber-table td:nth-child(4) { width: 164px; }
+.barber-accounts-panel .barber-state-select { width: 148px; min-width: 148px; min-height: 44px; }
+.barber-accounts-panel .barber-state-form { display: block; }
+.barber-accounts-panel [data-save-feedback]:empty { display: none; }
+.barber-account-actions { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; margin: 0; }
+.barber-account-actions > * { flex: 0 0 auto; min-height: 44px; padding: 8px 12px; font-size: .8125rem; white-space: nowrap; }
+.barber-password-section { border-top: 1px solid var(--line); padding-top: 20px; margin-top: 24px; }
+.barber-password-section > summary { cursor: pointer; font-weight: 600; min-height: 44px; padding: 10px 0; }
+@media (max-width: 760px) {
+    .barber-accounts-heading { align-items: flex-start; }
+    .barber-toolbar-actions { margin-left: 0; width: 100%; }
+    .barber-toolbar-actions > * { flex: 1 1 auto; text-align: center; }
+    .barber-accounts-panel .table-scroll { overflow-x: auto; }
+}
