@@ -71,16 +71,21 @@
     <x-metric-card :value="ucfirst($todayAttendance?->status ?? 'Not clocked in')" icon="attendance" class="metric-context">Today's Attendance</x-metric-card>
 </div>
 <section class="panel">
-    <h2>Daily &amp; Monthly Sales Breakdown</h2>
-    <p class="muted">Read-only earnings from your own completed, verified transactions. Existing 50/50 split retained.</p>
+    <h2>My earnings</h2>
+    <p class="muted">Read-only. Earnings from your own completed services with verified payments, at your 50% share of each sale.</p>
     <form class="report-filters" method="GET"><div><label for="date">Earnings date (optional)</label><input id="date" type="date" name="date" value="{{ request('date') }}"></div><div><label for="month">Month</label><input id="month" type="month" name="month" value="{{ $selectedMonth }}"></div><button>Apply</button><a href="{{ route('dashboard') }}">Reset</a></form>
-    <div class="stats grid grid-cols-1 sm:grid-cols-3">
-        <article class="stat"><span>Selected Period Gross Revenue</span><strong>₱{{ number_format($periodGross,2) }}</strong></article>
-        <article class="stat"><span>Selected Period Net Barber Share</span><strong>₱{{ number_format($selectedPeriodBarberShare,2) }}</strong></article>
-        <article class="stat"><span>Selected month earnings</span><strong>₱{{ number_format($monthEarnings,2) }}</strong></article>
+    @php
+        $hasDate = filled(request('date'));
+        $monthLabel = rescue(fn () => \Illuminate\Support\Carbon::parse($selectedMonth.'-01')->format('F Y'), 'the selected month');
+        $dateLabel = $hasDate ? rescue(fn () => \Illuminate\Support\Carbon::parse(request('date'))->format('M j, Y'), request('date')) : null;
+    @endphp
+    <div class="stats grid grid-cols-1 {{ $hasDate ? 'sm:grid-cols-3' : 'sm:grid-cols-2' }}">
+        <article class="stat"><span>Total of my completed services</span><strong>₱{{ number_format($periodGross,2) }}</strong></article>
+        <article class="stat"><span>My earnings {{ $hasDate ? 'on '.$dateLabel : 'in '.$monthLabel }}</span><strong>₱{{ number_format($selectedPeriodBarberShare,2) }}</strong></article>
+        @if($hasDate)<article class="stat"><span>My earnings in {{ $monthLabel }}</span><strong>₱{{ number_format($monthEarnings,2) }}</strong></article>@endif
     </div>
     <table><thead><tr><th>Date</th><th>Completed services</th><th>Your earnings</th></tr></thead><tbody>
-    @forelse($salesBreakdown as $day)<tr><td>{{ $day->date }}</td><td>{{ $day->total_services }}</td><td>₱{{ number_format($day->barber_share,2) }}</td></tr>@empty<tr><td colspan="3">No valid completed services in this period.</td></tr>@endforelse
+    @forelse($salesBreakdown as $day)<tr><td>{{ \Illuminate\Support\Carbon::parse($day->date)->format('M j, Y') }}</td><td>{{ $day->total_services }}</td><td>₱{{ number_format($day->barber_share,2) }}</td></tr>@empty<tr><td colspan="3">No valid completed services in this period.</td></tr>@endforelse
     </tbody></table>
 </section>
 <section class="panel"><h2>Recent earnings claims</h2><table><thead><tr><th>Claimed on</th><th>Service dates</th><th>Amount</th><th>Status</th></tr></thead><tbody>@forelse($recentClaims as $claim)<tr><td class="record-date">{{ $claim->confirmed_at->format('M j, Y') }}<span class="cell-meta">{{ $claim->confirmed_at->format('g:i A') }}</span></td><td class="record-date">{{ $claim->period_start->format('M j, Y') }}<span class="cell-meta">through {{ $claim->period_end->format('M j, Y') }}</span></td><td>₱{{ number_format($claim->amount,2) }}</td><td><span class="badge badge-present">Claimed</span></td></tr>@empty<tr><td colspan="4" class="empty-state">No earnings claimed yet. Your unclaimed balance carries forward automatically.</td></tr>@endforelse</tbody></table></section>

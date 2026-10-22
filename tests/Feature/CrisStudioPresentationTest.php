@@ -20,7 +20,7 @@ class CrisStudioPresentationTest extends TestCase
             ->assertSee('One workspace for your team, services, and daily operations.')
             ->assertSee('autocomplete="current-password"', false)
             ->assertSee('data-password-toggle="password"', false)
-            ->assertSee('these addresses do not receive email.');
+            ->assertSee('Ask the shop owner to reset your password.');
     }
 
     public function test_barber_overview_renders_its_existing_six_metrics(): void
@@ -61,9 +61,9 @@ class CrisStudioPresentationTest extends TestCase
     private function assertClockActions(TestResponse $response, bool $inDisabled, bool $outDisabled): void
     {
         foreach (['in' => $inDisabled, 'out' => $outDisabled] as $action => $disabled) {
-            $found = preg_match('/<button\s[^>]*name="action"[^>]*value="'.$action.'"[^>]*>/', $response->getContent(), $matches);
-            $this->assertSame(1, $found, 'Clock '.$action.' action exists');
-            $this->assertSame($disabled, str_contains($matches[0] ?? '', 'disabled'), 'Clock '.$action.' disabled state');
+            $found = preg_match('/<button\s[^>]*name="action"[^>]*value="' . $action . '"[^>]*>/', $response->getContent(), $matches);
+            $this->assertSame(1, $found, 'Clock ' . $action . ' action exists');
+            $this->assertSame($disabled, str_contains($matches[0] ?? '', 'disabled'), 'Clock ' . $action . ' disabled state');
         }
     }
 }

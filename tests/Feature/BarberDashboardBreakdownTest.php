@@ -47,8 +47,8 @@ class BarberDashboardBreakdownTest extends TestCase
         $response = $this->actingAs($user)->get('/dashboard?month=2026-10');
 
         $response->assertStatus(200)
-            ->assertSee('Daily & Monthly Sales Breakdown')
-            ->assertSee('Selected Period Gross Revenue')
-            ->assertSee('Selected Period Net Barber Share');
+            ->assertSee('My earnings')
+            ->assertSee('Total of my completed services')
+            ->assertSee('My earnings in October 2026');
     }
 }

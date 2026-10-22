@@ -35,7 +35,7 @@
         <tbody>
             @forelse($transactions as $transaction)
                 <tr>
-                    <td>{{ $transaction->transaction_date }}</td>
+                    <td>{{ $transaction->transaction_date?->format('M j, Y g:i A') ?? '—' }}</td>
                     <td>{{ $transaction->services->isNotEmpty() ? $transaction->services->map(fn ($service) => $service->pivot->service_name.' × '.$service->pivot->quantity)->implode(', ') : ($transaction->service_name ?? 'Legacy') }}</td>
                     <td>₱{{ number_format($transaction->total_amount, 2) }}</td>
                     <td>{{ $transaction->status }}</td>

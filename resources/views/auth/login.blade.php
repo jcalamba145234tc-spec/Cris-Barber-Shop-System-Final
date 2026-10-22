@@ -37,7 +37,7 @@
             
         </form>
        <p class="muted field-hint">
-  <strong>Using a generated .local login? Ask the shop owner to reset your password; these addresses do not receive email.</strong>
+  <strong>Ask the shop owner to reset your password.</strong>
 </p>
 
 

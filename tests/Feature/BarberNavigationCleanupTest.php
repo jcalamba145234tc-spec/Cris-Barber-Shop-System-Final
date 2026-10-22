@@ -52,7 +52,7 @@ class BarberNavigationCleanupTest extends TestCase
         $this->actingAs($this->barberUser)->get('/dashboard')
             ->assertOk()->assertViewHas('todayEarnings', 100)->assertViewHas('totalEarnings', 100)
             ->assertSee("Today's Earnings", false)->assertSee('Total Earnings')
-            ->assertSee('Daily &amp; Monthly Sales Breakdown', false)
+            ->assertSee('<h2>My earnings</h2>', false)
             ->assertSee('href="'.route('dashboard').'">Reset</a>', false);
     }
 

@@ -12,7 +12,7 @@
 @forelse($barbers as $barber)
 @php($record = $barber->attendance->first())
 @php($label = match($barber->attendance_status) { 'late' => 'Late', 'absent' => 'Absent', 'on_leave' => 'On Leave', 'not_yet' => 'Not Yet Clocked In', default => $record?->time_out ? 'Clocked Out' : 'Clocked In' })
-<tr><td><strong>{{ $barber->name }}</strong></td><td>{{ $record?->time_in?->format('g:i A') ?? '—' }}</td><td>{{ $record?->time_out?->format('g:i A') ?? '—' }}</td><td><span class="badge badge-{{ $barber->attendance_status }}">{{ $label }}</span></td><td>{{ $record?->hours ?? '—' }}</td><td>
+<tr><td><strong>{{ $barber->name }}</strong></td><td>{{ $record?->time_in?->format('g:i A') ?? '—' }}</td><td>{{ $record?->time_out?->format('g:i A') ?? '—' }}</td><td><span class="badge badge-{{ $barber->attendance_status }}">{{ $label }}</span></td><td>{{ $record?->hours_label ?? '—' }}</td><td>
 @if($selectedDate <= today()->toDateString())<button type="button" class="secondary-button" x-data @click="$dispatch('open-modal', 'attendance-{{ $barber->id }}')">Set / correct</button>@else<span class="muted">Future date</span>@endif
 </td></tr>
 @empty<tr><td colspan="6" class="empty-state">No barbers yet. Create a barber account to see the team roster.</td></tr>@endforelse
@@ -49,6 +49,6 @@
 </section>
 <section class="panel"><h2>My attendance records</h2>
 <form class="report-filters" method="GET"><div><label for="from">From</label><input id="from" name="from" type="date" value="{{ request('from') }}"></div><div><label for="to">To</label><input id="to" name="to" type="date" value="{{ request('to') }}"></div><button>Filter</button><a href="{{ route('attendance.index') }}">Reset</a></form>
-<table><thead><tr><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Status</th><th>Hours</th></tr></thead><tbody>@forelse($attendance as $record)<tr><td>{{ $record->date->format('M j, Y') }}</td><td>{{ $record->time_in?->format('g:i A') ?? '—' }}</td><td>{{ $record->time_out?->format('g:i A') ?? '—' }}</td><td><span class="badge badge-{{ $record->status }}">{{ ucfirst(str_replace('_',' ',$record->status)) }}</span></td><td>{{ $record->hours ?? '—' }}</td></tr>@empty<tr><td colspan="5" class="empty-state">No attendance records in this period. <a href="{{ route('attendance.index') }}">Reset filters</a></td></tr>@endforelse</tbody></table>{{ $attendance->links() }}</section>
+<table><thead><tr><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Status</th><th>Hours</th></tr></thead><tbody>@forelse($attendance as $record)<tr><td>{{ $record->date->format('M j, Y') }}</td><td>{{ $record->time_in?->format('g:i A') ?? '—' }}</td><td>{{ $record->time_out?->format('g:i A') ?? '—' }}</td><td><span class="badge badge-{{ $record->status }}">{{ ucfirst(str_replace('_',' ',$record->status)) }}</span></td><td>{{ $record->hours_label ?? '—' }}</td></tr>@empty<tr><td colspan="5" class="empty-state">No attendance records in this period. <a href="{{ route('attendance.index') }}">Reset filters</a></td></tr>@endforelse</tbody></table>{{ $attendance->links() }}</section>
 @endif
 @endsection

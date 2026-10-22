@@ -63,7 +63,10 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->user()->update(['last_login_at' => now()]);
 
-        return redirect()->intended(route('dashboard'));
+        // A fresh sign-in always starts at the role-specific dashboard.
+        $request->session()->forget(['url.intended', 'auth.last_page']);
+
+        return redirect()->route('dashboard');
     }
 
     public function logout(Request $request)
